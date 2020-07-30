@@ -6,6 +6,7 @@ authors = ["Jeremy Lavergne <github@lavergne.me>"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
+click = "^7.1.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
