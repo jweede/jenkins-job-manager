@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Tool for managing jenkins jobs through jenkins job builder
+Wrapper tool for managing jenkins jobs via jenkins job builder
 """
 from jenkins_job_manager.core import JenkinsJobManager
 
@@ -9,7 +9,7 @@ import logging
 import os
 
 logging.basicConfig(level=logging.INFO)
-log = logging.getLogger("jjb")
+log = logging.getLogger("jjm")
 
 HERE = os.path.dirname(os.path.realpath(__file__))
 
@@ -19,7 +19,7 @@ HERE = os.path.dirname(os.path.realpath(__file__))
 @click.option("--working-dir", "-C", default=None, help="change to this directory ")
 @click.option("--url", help="jenkins base url")
 @click.pass_context
-def jjb(ctx, debug, working_dir, url):
+def jjm(ctx, debug, working_dir, url):
     """Jenkins Job Management"""
     if debug:
         log.setLevel(logging.DEBUG)
@@ -42,9 +42,9 @@ def jjb(ctx, debug, working_dir, url):
         raise click.exceptions.Exit(1)
 
 
-@jjb.command(name="login")
+@jjm.command(name="login")
 @click.pass_obj
-def jjb_login(obj: JenkinsJobManager):
+def jjm_login(obj: JenkinsJobManager):
     """store login config per url"""
     jjm = obj
     jconf = jjm.config
@@ -76,9 +76,9 @@ def jjb_login(obj: JenkinsJobManager):
         raise click.exceptions.Exit(2)
 
 
-@jjb.command(name="check")
+@jjm.command(name="check")
 @click.pass_obj
-def jjb_check(obj: JenkinsJobManager):
+def jjm_check(obj: JenkinsJobManager):
     """check syntax/config"""
     obj.generate_jjb_xml()
 
@@ -113,18 +113,18 @@ def handle_plan_report(obj: JenkinsJobManager, use_pager=True):
         click.secho("No changes.", fg="green")
 
 
-@jjb.command(name="plan")
+@jjm.command(name="plan")
 @click.pass_obj
-def jjb_plan(obj: JenkinsJobManager):
+def jjm_plan(obj: JenkinsJobManager):
     """check syntax/config"""
     check_auth(obj)
     obj.gather()
     handle_plan_report(obj, use_pager=True)
 
 
-@jjb.command(name="apply")
+@jjm.command(name="apply")
 @click.pass_obj
-def jjb_apply(obj: JenkinsJobManager):
+def jjm_apply(obj: JenkinsJobManager):
     """check and apply changes"""
     check_auth(obj)
     obj.gather()
@@ -137,9 +137,9 @@ def jjb_apply(obj: JenkinsJobManager):
     click.echo(msg)
 
 
-@jjb.command(name="import")
+@jjm.command(name="import")
 @click.pass_obj
-def jjb_import(obj: JenkinsJobManager):
+def jjm_import(obj: JenkinsJobManager):
     check_auth(obj)
     obj.gather()
     missing = obj.import_missing()
@@ -147,4 +147,4 @@ def jjb_import(obj: JenkinsJobManager):
 
 
 if __name__ == "__main__":
-    jjb()
+    jjm()
