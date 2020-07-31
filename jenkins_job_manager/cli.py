@@ -7,7 +7,11 @@ import difflib
 import hashlib
 import itertools
 import logging
+import operator
 import os
+import re
+import random
+import string
 import xml.dom.minidom
 import xml.etree.ElementTree
 from collections import defaultdict
@@ -115,6 +119,12 @@ class XmlChange:
 
     __slots__ = ("name", "_before", "_after")
 
+    sortable_node_names = {
+        "project",
+        "hudson.plugins.ws__cleanup.WsCleanup",
+        "jenkins.plugins.slack.SlackNotifier",
+    }
+
     def __init__(self, name):
         self.name = name
         if name is None:
@@ -130,6 +140,11 @@ class XmlChange:
         node_queue = [root]
         while node_queue:
             node = node_queue.pop()
+
+            if node.nodeName in XmlChange.sortable_node_names:
+                # sort child elements for consistency
+                node.childNodes.sort(key=operator.attrgetter("nodeName"))
+
             for n in node.childNodes:
                 if n.nodeType is Node.TEXT_NODE and n.nodeValue:
                     n.nodeValue = n.nodeValue.strip()
@@ -189,9 +204,9 @@ class JenkinsJobManager:
 
     __slots__ = ("config", "plugins_list", "_jenkins", "jobs", "views")
     job_managing_job_classes = frozenset(["jenkins.branch.OrganizationFolder"])
+    raw_xml_yaml_path = "./raw_xml_jobs.yaml"
 
     def __init__(self, config_overrides=None):
-
         self.config: JenkinsConnectConfig = JenkinsConnectConfig.load_from_files(config_overrides)
         self._jenkins: Optional[jenkins.Jenkins] = None
         self.plugins_list: Optional[list] = None
@@ -221,13 +236,14 @@ class JenkinsJobManager:
     def read_jobs(self):
         jenkins = self.jenkins
         jobs = self.jobs
+
         log.info("Reading jenkins jobs state")
         # ignorable subfolder jobs
         managed_job_urls = set()
         _empty = tuple()
         for d in jenkins.get_all_jobs():
             log.debug("found job %r", d)
-            name, url, _class = d["fullname"], d["url"], d["_class"]
+            name, url, _class = d["fullname"], d["url"], d.get("_class")
             subjobs = d.get("jobs", _empty)
             if _class in self.job_managing_job_classes:
                 managed_job_urls.update(job_d["url"] for job_d in subjobs)
@@ -248,9 +264,7 @@ class JenkinsJobManager:
     def xml_dump(root: xml.etree.ElementTree.Element) -> str:
         return xml.etree.ElementTree.tostring(root, encoding="unicode")
 
-    def generate_jjb_xml(self):
-        """borrow jjb rendering to render jjb yaml to xml"""
-
+    def get_jjb_config(self):
         class JJBConfig:
             yamlparser = {
                 "allow_duplicates": False,
@@ -259,7 +273,43 @@ class JenkinsJobManager:
                 "retain_anchors": None,
             }
 
-        class RawXmlJob(jenkins_jobs.modules.base.Base):
+            @staticmethod
+            def get_plugin_config(*args, **kwargs):
+                return None
+
+        return JJBConfig
+
+    def jenkins_format_xml(self, xml_job: XmlJob):
+        """bounces job config through jenkins to get the formatting right"""
+        jenkins = self.jenkins
+        _xml: xml.etree.ElementTree.Element = xml_job.xml
+
+        if not _xml.find("./disabled"):
+            d = xml.etree.ElementTree.Element("disabled")
+            d.text = "false"
+            _xml.append(d)
+        disabled_job = _xml.find("./disabled").text == "true"
+
+        rand_suffix = "".join(random.choice(string.hexdigits) for _ in range(10))
+        tmp_name = f"zz_jjm_tmp_{xml_job.name}_{rand_suffix}"
+        tmp_xml = xml_job.xml
+        tmp_xml.find("./disabled").text = "true"
+        tmp_xml_str = xml.etree.ElementTree.tostring(tmp_xml, encoding="unicode")
+        log.info("creating %s", tmp_name)
+        jenkins.create_job(tmp_name, tmp_xml_str)
+        formatted_xml = jenkins.get_job_config(tmp_name)
+        log.info("removing %s", tmp_name)
+        jenkins.delete_job(tmp_name)
+        if not disabled_job:
+            formatted_xml = formatted_xml.replace(
+                "<disabled>true</disabled>", "<disabled>false</disabled>"
+            )
+        return formatted_xml
+
+    def generate_jjb_xml(self):
+        """borrow jjb rendering to render jjb yaml to xml"""
+
+        class RawXmlProject(jenkins_jobs.modules.base.Base):
             """add a job type for raw xml"""
 
             def root_xml(self, data):
@@ -269,20 +319,35 @@ class JenkinsJobManager:
         class XmlJobGeneratorWithRaw(XmlJobGenerator):
             """bypasses the module loader for the raw xml job type"""
 
+            def _annotate_with_plugins(self, xml_job: XmlJob):
+                """Many elements coming out of jjb are missing plugin version data."""
+                plugins: dict = self.registry.plugins_dict
+                doc: xml.etree.ElementTree.Element = xml_job.xml
+                for node in doc.iterfind(".//*[@plugin]"):
+                    plugin_name = node.attrib["plugin"]
+                    if "@" in plugin_name:
+                        continue
+                    version = plugins[plugin_name]["version"]
+                    log.debug("annotated %r with %s@%s", node, plugin_name, version)
+                    node.attrib["plugin"] = f"{plugin_name}@{version}"
+
             def _getXMLForData(self, data):
                 kind = data.get(self.kind_attribute, self.kind_default)
                 if kind == "raw":
-                    mod = RawXmlJob(self.registry)
+                    mod = RawXmlProject(self.registry)
                     _xml = mod.root_xml(data)
                     obj = XmlJob(_xml, data["name"])
                     return obj
-                return super(XmlJobGenerator, self)._getXMLForData(data)
+                xml_job = super(XmlJobGenerator, self)._getXMLForData(data)
+                # self._annotate_with_plugins(xml_job)
+                return xml_job
 
+        jjb_config = self.get_jjb_config()
         options_names = []
         files_path = ["."]
 
-        parser = YamlParser(JJBConfig)
-        registry = ModuleRegistry(JJBConfig, self.plugins_list)
+        parser = YamlParser(jjb_config)
+        registry = ModuleRegistry(jjb_config, self.plugins_list)
 
         xml_job_generator = XmlJobGeneratorWithRaw(registry)
         xml_view_generator = XmlViewGenerator(registry)
@@ -295,7 +360,12 @@ class JenkinsJobManager:
         xml_jobs = xml_job_generator.generateXML(job_data_list)
         jobs = self.jobs
         for xml_job in xml_jobs:
-            jobs[xml_job.name].after_xml = self.xml_dump(xml_job.xml)
+            # extra normalization
+            if False:
+                formatted_xml_str = self.jenkins_format_xml(xml_job)
+            else:
+                formatted_xml_str = self.xml_dump(xml_job.xml)
+            jobs[xml_job.name].after_xml = formatted_xml_str
 
         xml_views = xml_view_generator.generateXML(view_data_list)
         views = self.views
@@ -313,6 +383,58 @@ class JenkinsJobManager:
         self.read_jobs()
         self.load_plugins_list()
         self.generate_jjb_xml()
+
+    def import_missing(self):
+        """import missing jobs as xml"""
+        missing = [item for item in self.jobs.values() if item.changetype() is DELETE]
+        if not missing:
+            return None
+
+        class FakeRegistry:
+            modules = []
+
+        def job_name_to_file_name(j_name):
+            _part = re.sub(r"[\/]", "_", j_name)
+            return f"./{_part}.xml"
+
+        xml_job_name_pairs = []
+
+        if os.path.exists(self.raw_xml_yaml_path):
+            parser = YamlParser(self.get_jjb_config())
+            parser.load_files([self.raw_xml_yaml_path])
+            job_data_list, _ = parser.expandYaml(FakeRegistry, [])
+            for job_data in job_data_list:
+                name = job_data["name"]
+                fname = job_name_to_file_name(name)
+                assert os.path.exists(fname)
+                xml_job_name_pairs.append((name, fname))
+        template = jinja2.Template(
+            """\
+---
+{% for job_name, file_name in raw_xml_jobs -%}
+- job:
+   name: {{ job_name |tojson }}
+   project-type: raw
+   raw: !include-raw: {{ file_name }}
+
+{% endfor -%}
+""",
+            undefined=jinja2.StrictUndefined,
+        )
+
+        for missing in missing:
+            job_name = missing.name
+            file_name = job_name_to_file_name(job_name)
+            job_config = missing.before_xml
+            xml_job_name_pairs.append((job_name, file_name))
+            assert not os.path.exists(file_name)
+            with open(file_name, "w") as fp:
+                fp.write(job_config)
+            log.info("Imported %s to %s", job_name, file_name)
+
+        with open(self.raw_xml_yaml_path, "w") as fp:
+            template.stream(raw_xml_jobs=xml_job_name_pairs).dump(fp)
+        return missing
 
     def plan_report(self):
         """report on changes about to be made"""
@@ -398,6 +520,9 @@ No changes.
                 changecounts[DELETE] += 1
             else:
                 raise RuntimeError(f"Invalid changetype {changetype}(id={id(changetype)})")
+
+
+
         return changecounts
 
 
@@ -468,16 +593,6 @@ def jjb_check(obj: JenkinsJobManager):
     obj.generate_jjb_xml()
 
 
-@jjb.command(name="test")
-@click.pass_obj
-def jjb_test(obj: JenkinsJobManager):
-    """check syntax/config"""
-    obj.gather()
-    print(obj.detected_changes())
-    for item in obj.jobs.values():
-        print(item.name, item.changetype())
-
-
 def check_auth(obj: JenkinsJobManager):
     """cli helper for auth check"""
     if not obj.check_authentication():
@@ -533,6 +648,15 @@ def jjb_apply(obj: JenkinsJobManager):
         f"Changes applied. added={changecounts[CREATE]} updated={changecounts[UPDATE]}"
         f" deleted={changecounts[DELETE]}"
     )
+
+
+@jjb.command(name="import")
+@click.pass_obj
+def jjb_import(obj: JenkinsJobManager):
+    check_auth(obj)
+    obj.gather()
+    missing = obj.import_missing()
+    click.secho(f"Imported {len(missing)} jobs.", fg="green")
 
 
 if __name__ == "__main__":
