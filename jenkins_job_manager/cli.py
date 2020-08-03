@@ -91,7 +91,7 @@ def check_auth(obj: JenkinsJobManager):
         raise click.exceptions.Exit(1)
 
 
-def handle_plan_report(obj: JenkinsJobManager, use_pager=True):
+def handle_plan_report(obj: JenkinsJobManager, use_pager=True) -> bool:
     """cli helper for plan report"""
 
     def output_format(line):
@@ -109,17 +109,22 @@ def handle_plan_report(obj: JenkinsJobManager, use_pager=True):
         else:
             for line in gen_lines:
                 click.echo(line, nl=False)
+        changes = True
     else:
         click.secho("No changes.", fg="green")
+        changes = False
+    return changes
 
 
 @jjm.command(name="plan")
 @click.pass_obj
 def jjm_plan(obj: JenkinsJobManager):
-    """check syntax/config"""
+    """check for changes"""
     check_auth(obj)
     obj.gather()
-    handle_plan_report(obj, use_pager=True)
+    changes = handle_plan_report(obj, use_pager=True)
+    if changes:
+        click.exceptions.Exit(2)
 
 
 @jjm.command(name="apply")

@@ -57,6 +57,7 @@ class JenkinsJobManager:
         return self._jenkins
 
     def check_authentication(self):
+        """check if jenkins connection config correct"""
         log.debug("checking credentials")
         try:
             self.jenkins.run_script("println 'ok'")
@@ -66,6 +67,7 @@ class JenkinsJobManager:
         return True
 
     def read_jobs(self):
+        """read existing jobs from jenkins"""
         jenkins = self.jenkins
         jobs = self.jobs
 
@@ -112,7 +114,10 @@ class JenkinsJobManager:
         return JJBConfig
 
     def jenkins_format_xml(self, xml_job: XmlJob):
-        """bounces job config through jenkins to get the formatting right"""
+        """
+        bounces job config through jenkins to get the formatting right
+        unused, deprecated
+        """
         jenkins = self.jenkins
         _xml: xml.etree.ElementTree.Element = xml_job.xml
 
@@ -139,7 +144,7 @@ class JenkinsJobManager:
         return formatted_xml
 
     def generate_jjb_xml(self):
-        """borrow jjb rendering to render jjb yaml to xml"""
+        """render jjb yaml to xml"""
 
         class RawXmlProject(jenkins_jobs.modules.base.Base):
             """add a job type for raw xml"""
@@ -192,11 +197,7 @@ class JenkinsJobManager:
         xml_jobs = xml_job_generator.generateXML(job_data_list)
         jobs = self.jobs
         for xml_job in xml_jobs:
-            # extra normalization
-            if False:
-                formatted_xml_str = self.jenkins_format_xml(xml_job)
-            else:
-                formatted_xml_str = self.xml_dump(xml_job.xml)
+            formatted_xml_str = self.xml_dump(xml_job.xml)
             jobs[xml_job.name].after_xml = formatted_xml_str
 
         xml_views = xml_view_generator.generateXML(view_data_list)
@@ -358,7 +359,8 @@ No changes.
                 raise RuntimeError(
                     f"Invalid changetype {changetype}(id={id(changetype)})"
                 )
-
-        msg = f"Changes applied. added={changecounts[CREATE]} updated={changecounts[UPDATE]} deleted={changecounts[DELETE]}"
-
-        return (changecounts, msg)
+        msg = (
+            f"Changes applied. added={changecounts[CREATE]} updated={changecounts[UPDATE]}"
+            f" deleted={changecounts[DELETE]}"
+        )
+        return changecounts, msg
