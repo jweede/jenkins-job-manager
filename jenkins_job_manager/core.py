@@ -26,7 +26,7 @@ from jenkins_jobs.xml_config import XmlJob, XmlJobGenerator, XmlViewGenerator
 
 
 logging.basicConfig(level=logging.INFO)
-log = logging.getLogger("jjb")
+log = logging.getLogger("jjm")
 
 
 class JenkinsJobManager:

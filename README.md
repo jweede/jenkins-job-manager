@@ -2,7 +2,7 @@
 
 This is a wrapper script around [Jenkins Job Builder][jjb], that adds:
  - jenkins login management
- - get a preview of changes _before_ applying them, similar to [Terraform][tf]
+ - Preview of changes _before_ applying them, similar to [Terraform][tf].
  - A "raw" project type, so you can manage projects that [JJB][jjb] does not yet support. 
 
 ## Installation

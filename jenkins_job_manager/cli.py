@@ -35,7 +35,7 @@ def jjm(ctx, debug, working_dir, url):
         click.echo(
             "\n"
             "ERROR: No jenkins url configured.\n"
-            "Create a ./jjb.ini file with contents:\n"
+            "Create a ./jjm.ini file with contents:\n"
             "    [jenkins]\n"
             "    url = https://yourjenkinsurl.com/\n"
         )

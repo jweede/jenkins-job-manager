@@ -4,7 +4,7 @@ import logging
 import os
 
 logging.basicConfig(level=logging.INFO)
-log = logging.getLogger("jjb")
+log = logging.getLogger("jjm")
 
 
 class JenkinsConnectConfig:
@@ -13,8 +13,8 @@ class JenkinsConnectConfig:
     Includes methods for loading/storing per-user, per-url auth config.
     """
 
-    global_conf_path = "/etc/jjb/jenkins_creds.ini"
-    user_conf_path = os.path.expanduser("~/.config/jjb/jenkins_creds.ini")
+    global_conf_path = "/etc/jjm/jenkins_creds.ini"
+    user_conf_path = os.path.expanduser("~/.config/jjm/jenkins_creds.ini")
     __slots__ = ("url", "username", "password", "timeout")
 
     def __init__(self, url, username, password, timeout=None):
@@ -49,7 +49,7 @@ class JenkinsConnectConfig:
             [
                 JenkinsConnectConfig.global_conf_path,
                 JenkinsConnectConfig.user_conf_path,
-                "./jjb.ini",
+                "./jjm.ini",
             ]
         )
         # cli overrides
