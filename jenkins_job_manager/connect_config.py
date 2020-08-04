@@ -111,6 +111,8 @@ class MetadataConfig:
             key = f"valid-values-for-{field}".lower()
             if key in self.metadata_conf:
                 self.valid_field_values[field] = self.metadata_conf[key]
+        log.debug("required_fields: %r", self.required_fields)
+        log.debug("valid_field_values: %r", self.valid_field_values)
 
     @staticmethod
     def build_from_configparser(cp: configparser.RawConfigParser):
@@ -129,13 +131,16 @@ class MetadataConfig:
     def validate(self, md: dict):
         for field in self.required_fields:
             if field not in md:
-                yield f"Missing metadata: {field}"
+                yield (
+                    f"Missing metadata in job description: {field}."
+                    f"\nAdd a line like `{field}: somevalue` to the description."
+                )
         for field, field_values in self.valid_field_values.items():
             val = md.get(field)
             if val is None:
                 continue
             if val not in field_values:
                 yield (
-                    f"Field {field} has invalid value {val}."
-                    f" Valid values are {','.join(field_values)}"
+                    f"Field {field} in job description has invalid value {val}."
+                    f"\nValid values are {','.join(field_values)}"
                 )

@@ -289,7 +289,7 @@ class JenkinsJobManager:
                 return {}
             md = {
                 m.group(1): m.group(2)
-                for m in re.finditer(r"^([\w-]+):\s*([\w-]+)$", desc.text, flags=re.M)
+                for m in re.finditer(r"^([\w-]+):\s*([\w -]+)$", desc.text, flags=re.M)
             }
             return md
 

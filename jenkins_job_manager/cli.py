@@ -58,7 +58,10 @@ def jjm_login(obj: JenkinsJobManager):
     click.secho("Configuring login info for:", fg="green")
     click.secho(f"\t{jurl}", fg="white")
 
-    click.secho(f"\nEnter username, go to {jurl}/whoAmI/ if unsure.")
+    click.secho(
+        f"\nEnter username, If unsure go to {jurl}/whoAmI/"
+        f" (if this says anonymous, you need to login first)"
+    )
     username = click.prompt("username", type=str)
 
     click.secho(
