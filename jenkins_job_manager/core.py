@@ -32,7 +32,14 @@ log = logging.getLogger("jjm")
 class JenkinsJobManager:
     """main jjb manager"""
 
-    __slots__ = ("config", "plugins_list", "_jenkins", "jobs", "views")
+    __slots__ = (
+        "config",
+        "plugins_list",
+        "_jenkins",
+        "jobs",
+        "views",
+        "validation_errors",
+    )
     job_managing_job_classes = frozenset(["jenkins.branch.OrganizationFolder"])
     raw_xml_yaml_path = "./raw_xml_jobs.yaml"
 
@@ -44,6 +51,7 @@ class JenkinsJobManager:
         self.plugins_list: Optional[list] = None
         self.jobs: Dict[str, XmlChange] = XmlChangeDefaultDict()
         self.views: Dict[str, XmlChange] = XmlChangeDefaultDict()
+        self.validation_errors = []
 
     @property
     def jenkins(self):
@@ -268,6 +276,30 @@ class JenkinsJobManager:
         with open(self.raw_xml_yaml_path, "w") as fp:
             template.stream(raw_xml_jobs=xml_job_name_pairs).dump(fp)
         return missing
+
+    def validate_metadata(self):
+        ET = xml.etree.ElementTree
+        md_conf = self.config.metadata
+
+        def extract_md(job: XmlChange):
+            node = ET.fromstring(job.after_xml)
+            desc = node.find("./description")
+            if desc is None:
+                log.warning("No description in jenkins job %r??", job.name)
+                return {}
+            md = {
+                m.group(1): m.group(2)
+                for m in re.finditer(r"^([\w-]+):\s*([\w-]+)$", desc.text, flags=re.M)
+            }
+            return md
+
+        for job in self.jobs.values():
+            if job.after_xml is None:
+                continue
+            md = extract_md(job)
+            warnings = md_conf.validate(md)
+            for warning in warnings:
+                yield job.name, warning
 
     def plan_report(self):
         """report on changes about to be made"""
