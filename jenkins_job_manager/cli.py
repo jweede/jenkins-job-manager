@@ -76,11 +76,25 @@ def jjm_login(obj: JenkinsJobManager):
         raise click.exceptions.Exit(2)
 
 
+def handle_validation_errors(obj: JenkinsJobManager, ignore=False):
+    warnings = obj.validate_metadata()
+    errors = False
+    for job_name, warning in warnings:
+        if errors is False:
+            click.secho("Validation Errors", fg="red", bold=True)
+            errors = True
+        click.secho(f"Job {job_name!r}: {warning}", fg="red")
+
+    if errors is True and ignore is False:
+        raise click.exceptions.Exit(5)
+
+
 @jjm.command(name="check")
 @click.pass_obj
 def jjm_check(obj: JenkinsJobManager):
     """check syntax/config"""
     obj.generate_jjb_xml()
+    handle_validation_errors(obj)
 
 
 def check_auth(obj: JenkinsJobManager):
@@ -122,6 +136,7 @@ def jjm_plan(obj: JenkinsJobManager):
     """check for changes"""
     check_auth(obj)
     obj.gather()
+    handle_validation_errors(obj)
     changes = handle_plan_report(obj, use_pager=True)
     if changes:
         click.exceptions.Exit(2)
@@ -133,6 +148,7 @@ def jjm_apply(obj: JenkinsJobManager):
     """check and apply changes"""
     check_auth(obj)
     obj.gather()
+    handle_validation_errors(obj)
     if not obj.detected_changes():
         click.secho("No changes to apply.", fg="green")
         return

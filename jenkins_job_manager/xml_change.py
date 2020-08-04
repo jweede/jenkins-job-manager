@@ -1,6 +1,6 @@
 import difflib
 import operator
-import xml
+import xml.dom.minidom
 
 from collections import defaultdict
 from xml.dom import Node
