@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "jenkins-job-manager"
-version = "0.1.3"
+version = "0.2.1"
 description = ""
 authors = ["Jeremy Lavergne <github@lavergne.me>", "Jon Wedaman <jweede@gmail.com>"]
 
@@ -19,4 +19,3 @@ jjm = 'jenkins_job_manager.cli:jjm'
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
-

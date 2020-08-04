@@ -131,15 +131,16 @@ def handle_plan_report(obj: JenkinsJobManager, use_pager=True) -> bool:
 
 
 @jjm.command(name="plan")
+@click.option("--skip-pager", is_flag=True)
 @click.pass_obj
-def jjm_plan(obj: JenkinsJobManager):
+def jjm_plan(obj: JenkinsJobManager, skip_pager: bool):
     """check for changes"""
     check_auth(obj)
     obj.gather()
     handle_validation_errors(obj)
-    changes = handle_plan_report(obj, use_pager=True)
+    changes = handle_plan_report(obj, use_pager=not skip_pager)
     if changes:
-        click.exceptions.Exit(2)
+        raise click.exceptions.Exit(2)
 
 
 @jjm.command(name="apply")
