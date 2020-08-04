@@ -287,9 +287,11 @@ class JenkinsJobManager:
             if desc is None:
                 log.warning("No description in jenkins job %r??", job.name)
                 return {}
+            text = desc.text
+            text = text.replace("<!-- Managed by Jenkins Job Builder -->", "")
             md = {
                 m.group(1): m.group(2)
-                for m in re.finditer(r"^([\w-]+):\s*([\w -]+)$", desc.text, flags=re.M)
+                for m in re.finditer(r"^\s*([\w-]+):\s*([\w -]+)\s*$", text, flags=re.M)
             }
             return md
 
