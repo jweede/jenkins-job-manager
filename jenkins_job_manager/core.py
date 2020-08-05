@@ -225,11 +225,11 @@ class JenkinsJobManager:
         self.load_plugins_list()
         self.generate_jjb_xml()
 
-    def import_missing(self):
+    def import_missing(self) -> list:
         """import missing jobs as xml"""
         missing = [item for item in self.jobs.values() if item.changetype() is DELETE]
         if not missing:
-            return None
+            return []
 
         class FakeRegistry:
             modules = []
@@ -263,10 +263,10 @@ class JenkinsJobManager:
             undefined=jinja2.StrictUndefined,
         )
 
-        for missing in missing:
-            job_name = missing.name
+        for mxml in missing:
+            job_name = mxml.name
             file_name = job_name_to_file_name(job_name)
-            job_config = missing.before_xml
+            job_config = mxml.before_xml
             xml_job_name_pairs.append((job_name, file_name))
             assert not os.path.exists(file_name)
             with open(file_name, "w") as fp:

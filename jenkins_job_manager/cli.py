@@ -93,9 +93,12 @@ def handle_validation_errors(obj: JenkinsJobManager, ignore=False):
 
 
 @jjm.command(name="check")
+@click.option("--load-plugins", is_flag=True)
 @click.pass_obj
-def jjm_check(obj: JenkinsJobManager):
+def jjm_check(obj: JenkinsJobManager, load_plugins):
     """check syntax/config"""
+    if load_plugins:
+        obj.load_plugins_list()
     obj.generate_jjb_xml()
     handle_validation_errors(obj)
 
