@@ -41,7 +41,7 @@ class JenkinsConnectConfig:
     def password_obscured(self):
         if self.password is None:
             return None
-        return "md5:" + hashlib.md5(self.password).hexdigest()
+        return "md5:" + hashlib.md5(self.password.encode("utf-8")).hexdigest()
 
     @staticmethod
     def load_from_files(config_overrides=None):
