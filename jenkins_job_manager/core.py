@@ -284,11 +284,10 @@ class JenkinsJobManager:
         def extract_md(job: XmlChange):
             node = ET.fromstring(job.after_xml)
             desc = node.find("./description")
-            if desc is None:
+            if desc is None or desc.text is None:
                 log.warning("No description in jenkins job %r??", job.name)
                 return {}
-            text = desc.text
-            text = text.replace("<!-- Managed by Jenkins Job Builder -->", "")
+            text = desc.text.replace("<!-- Managed by Jenkins Job Builder -->", "")
             md = {
                 m.group(1): m.group(2)
                 for m in re.finditer(r"^\s*([\w-]+):\s*([\w -]+)\s*$", text, flags=re.M)
