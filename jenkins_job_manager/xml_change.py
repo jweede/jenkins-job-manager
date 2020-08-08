@@ -20,9 +20,9 @@ class XmlChange:
         "jenkins.plugins.slack.SlackNotifier",
     }
 
-    def __init__(self, name):
+    def __init__(self, name: str):
         self.name = name
-        if name is None:
+        if not name:
             raise ValueError("Name must be set")
         self._before = None
         self._after = None
