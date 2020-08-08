@@ -1,12 +1,23 @@
-import click.testing
 import logging
+import os
 from unittest import mock
+
+import click.testing
+import tomlkit
 from jenkins_job_manager import __version__
 from jenkins_job_manager.cli import jjm, log
 
+HERE = os.path.dirname(os.path.realpath(__file__))
+PROJECT_DIR = os.path.realpath(HERE + "/../")
+
 
 def test_version():
-    assert __version__ == "0.2.4"
+    with open(f"{PROJECT_DIR}/pyproject.toml") as fp:
+        doc = tomlkit.parse(fp.read())
+    print(doc)
+    toml_version = doc["tool"]["poetry"]["version"]
+    assert __version__ == toml_version
+
 
 @mock.patch("jenkins_job_manager.cli.jjm_check", autospec=True)
 @mock.patch("jenkins_job_manager.cli.JenkinsJobManager", autospec=True)
@@ -39,7 +50,7 @@ def test_jjm(jjm_check, JenkinsJobManager):
     JenkinsJobManager.assert_not_called()
     JenkinsJobManager.reset_mock()
 
-    # check, no args 
+    # check, no args
     result = runner.invoke(jjm, ["check"])
     assert log.getEffectiveLevel() == logging.INFO
     assert result.exit_code == 0
@@ -66,7 +77,6 @@ def test_jjm(jjm_check, JenkinsJobManager):
     JenkinsJobManager.assert_not_called()
     JenkinsJobManager.reset_mock()
 
-
     # login, no args
     result = runner.invoke(jjm, ["login"])
     assert log.getEffectiveLevel() == logging.DEBUG
@@ -83,4 +93,3 @@ def test_jjm(jjm_check, JenkinsJobManager):
     assert "ERROR" not in result.output
     JenkinsJobManager.assert_not_called()
     JenkinsJobManager.reset_mock()
-
