@@ -51,7 +51,7 @@ def jjm_login(obj: JenkinsJobManager):
     jurl = jconf.url
     username, password = jconf.username, jconf.password
     if username and password:
-        click.secho(f"Auth already configured for this jenkins!", fg="red")
+        click.secho("Auth already configured for this jenkins!", fg="red")
         click.secho(f"{jconf}", fg="white")
         click.confirm("overwrite?", abort=True)
 
@@ -75,7 +75,7 @@ def jjm_login(obj: JenkinsJobManager):
         click.secho(f"Success! Saving to {jconf.user_conf_path}", fg="green")
         jconf.update_user_conf_auth(username, password)
     else:
-        click.secho(f"Bad Authentication, try again.", fg="red")
+        click.secho("Bad Authentication, try again.", fg="red")
         raise click.exceptions.Exit(2)
 
 
