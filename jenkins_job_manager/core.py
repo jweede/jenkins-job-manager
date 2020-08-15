@@ -34,6 +34,7 @@ class JenkinsJobManager:
 
     __slots__ = (
         "config",
+        "target",
         "plugins_list",
         "_jenkins",
         "jobs",
@@ -48,6 +49,7 @@ class JenkinsJobManager:
             config_overrides
         )
         self._jenkins: Optional[jenkins.Jenkins] = None
+        self.target: Optional[str] = None
         self.plugins_list: Optional[list] = None
         self.jobs: Dict[str, XmlChange] = XmlChangeDefaultDict()
         self.views: Dict[str, XmlChange] = XmlChangeDefaultDict()
@@ -63,6 +65,10 @@ class JenkinsJobManager:
                 timeout=self.config.timeout,
             )
         return self._jenkins
+
+    def target_job(self, target):
+        """filter to specific project"""
+        self.target = target
 
     def check_authentication(self):
         """check if jenkins connection config correct"""

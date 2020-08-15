@@ -34,9 +34,17 @@ def test_jjm(
     log,
 ):
     runner = click.testing.CliRunner()
-    base_args = ["-d", "-C", "/tmp", "--url", "https://yourjenkinsurl.com/"]
+    base_args = [
+        "-d",
+        "-C",
+        "/tmp",
+        "--url",
+        "https://yourjenkinsurl.com/",
+    ]
     overrides_url = {"url": "https://yourjenkinsurl.com/"}
     overrides_none = {}
+    target_bogus = "bogus"
+    target_none = None
 
     # no args (no command)
     result = runner.invoke(jjm)

@@ -138,10 +138,13 @@ def handle_plan_report(obj: JenkinsJobManager, use_pager=True) -> bool:
 
 @jjm.command(name="plan")
 @click.option("--skip-pager", is_flag=True)
+@click.option("--target", default=None, help="job name to specifically target")
 @click.pass_obj
-def jjm_plan(obj: JenkinsJobManager, skip_pager: bool):
+def jjm_plan(obj: JenkinsJobManager, skip_pager: bool, target: str):
     """check for changes"""
     check_auth(obj)
+    if target:
+        obj.target_job(target)
     obj.gather()
     handle_validation_errors(obj)
     changes = handle_plan_report(obj, use_pager=not skip_pager)
@@ -150,10 +153,13 @@ def jjm_plan(obj: JenkinsJobManager, skip_pager: bool):
 
 
 @jjm.command(name="apply")
+@click.option("--target", default=None, help="job name to specifically target")
 @click.pass_obj
-def jjm_apply(obj: JenkinsJobManager):
+def jjm_apply(obj: JenkinsJobManager, target: str):
     """check and apply changes"""
     check_auth(obj)
+    if target:
+        obj.target_job(target)
     obj.gather()
     handle_validation_errors(obj)
     if not obj.detected_changes():
@@ -166,9 +172,12 @@ def jjm_apply(obj: JenkinsJobManager):
 
 
 @jjm.command(name="import")
+@click.option("--target", default=None, help="job name to specifically target")
 @click.pass_obj
-def jjm_import(obj: JenkinsJobManager):
+def jjm_import(obj: JenkinsJobManager, target: str):
     check_auth(obj)
+    if target:
+        obj.target_job(target)
     obj.gather()
     missing = obj.import_missing()
     click.secho(f"Imported {len(missing)} jobs.", fg="green")
