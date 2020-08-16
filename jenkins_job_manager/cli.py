@@ -7,6 +7,7 @@ from jenkins_job_manager.core import JenkinsJobManager
 import click
 import logging
 import os
+import typing
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("jjm")
@@ -138,14 +139,12 @@ def handle_plan_report(obj: JenkinsJobManager, use_pager=True) -> bool:
 
 @jjm.command(name="plan")
 @click.option("--skip-pager", is_flag=True)
-@click.option("--target", default=None, help="job name to specifically target")
+@click.option("--target", default=None, multiple=True, help="job name regex to target")
 @click.pass_obj
-def jjm_plan(obj: JenkinsJobManager, skip_pager: bool, target: str):
+def jjm_plan(obj: JenkinsJobManager, skip_pager: bool, target: typing.List[str]):
     """check for changes"""
     check_auth(obj)
-    if target:
-        obj.target_job(target)
-    obj.gather()
+    obj.gather(target)
     handle_validation_errors(obj)
     changes = handle_plan_report(obj, use_pager=not skip_pager)
     if changes is True:
@@ -153,14 +152,12 @@ def jjm_plan(obj: JenkinsJobManager, skip_pager: bool, target: str):
 
 
 @jjm.command(name="apply")
-@click.option("--target", default=None, help="job name to specifically target")
+@click.option("--target", default=None, multiple=True, help="job name regex to target")
 @click.pass_obj
 def jjm_apply(obj: JenkinsJobManager, target: str):
     """check and apply changes"""
     check_auth(obj)
-    if target:
-        obj.target_job(target)
-    obj.gather()
+    obj.gather(target)
     handle_validation_errors(obj)
     if obj.detected_changes() is False:
         click.secho("No changes to apply.", fg="green")
@@ -172,13 +169,11 @@ def jjm_apply(obj: JenkinsJobManager, target: str):
 
 
 @jjm.command(name="import")
-@click.option("--target", default=None, help="job name to specifically target")
+@click.option("--target", default=None, multiple=True, help="job name regex to target")
 @click.pass_obj
 def jjm_import(obj: JenkinsJobManager, target: str):
     check_auth(obj)
-    if target:
-        obj.target_job(target)
-    obj.gather()
+    obj.gather(target)
     missing = obj.import_missing()
     click.secho(f"Imported {len(missing)} jobs.", fg="green")
 

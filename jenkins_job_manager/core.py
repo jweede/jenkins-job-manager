@@ -29,15 +29,31 @@ logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("jjm")
 
 
+class NameRegexFilter:
+    """Regex Filter Callable"""
+
+    __slots__ = ("regex",)
+
+    def __init__(self, regexp):
+        self.regex = re.compile(regexp)
+
+    def __call__(self, job_name):
+        m = self.regex.search(job_name)
+        return True if m is not None else False
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}<{repr(self.regex)[11:-1]}>"
+
+
 class JenkinsJobManager:
     """main jjb manager"""
 
     __slots__ = (
         "config",
-        "target",
         "plugins_list",
         "_jenkins",
         "jobs",
+        "_jobs_filter",
         "views",
         "validation_errors",
     )
@@ -49,9 +65,9 @@ class JenkinsJobManager:
             config_overrides
         )
         self._jenkins: Optional[jenkins.Jenkins] = None
-        self.target: Optional[str] = None
         self.plugins_list: Optional[list] = None
         self.jobs: Dict[str, XmlChange] = XmlChangeDefaultDict()
+        self._jobs_filter: NameRegexFilter = NameRegexFilter(".*")
         self.views: Dict[str, XmlChange] = XmlChangeDefaultDict()
         self.validation_errors = []
 
@@ -66,9 +82,9 @@ class JenkinsJobManager:
             )
         return self._jenkins
 
-    def target_job(self, target):
-        """filter to specific project"""
-        self.target = target
+    def set_filter_regex(self, filter_regex):
+        """filter to specific job names"""
+        self._jobs_filter = NameRegexFilter(filter_regex)
 
     def check_authentication(self):
         """check if jenkins connection config correct"""
@@ -93,7 +109,10 @@ class JenkinsJobManager:
             log.debug("found job %r", d)
             name, url, _class = d["fullname"], d["url"], d.get("_class")
             subjobs = d.get("jobs", _empty)
-            if _class in self.job_managing_job_classes:
+            if not self._jobs_filter(name):
+                log.debug("Ignored by filter: %s", name)
+                continue
+            elif _class in self.job_managing_job_classes:
                 managed_job_urls.update(job_d["url"] for job_d in subjobs)
             elif url in managed_job_urls:
                 log.debug("Ignoring managed job %s", name)
@@ -194,7 +213,7 @@ class JenkinsJobManager:
                 return xml_job
 
         jjb_config = self.get_jjb_config()
-        options_names = []
+        options_names = []  # normally a list of jobs globs
         files_path = ["."]
 
         parser = YamlParser(jjb_config)
@@ -208,7 +227,12 @@ class JenkinsJobManager:
 
         job_data_list, view_data_list = parser.expandYaml(registry, options_names)
 
-        xml_jobs = xml_job_generator.generateXML(job_data_list)
+        def job_data_filter_wrapper(job_data):
+            return self._jobs_filter(job_data["name"])
+
+        xml_jobs = xml_job_generator.generateXML(
+            filter(job_data_filter_wrapper, job_data_list)
+        )
         jobs = self.jobs
         for xml_job in xml_jobs:
             formatted_xml_str = self.xml_dump(xml_job.xml)
@@ -225,8 +249,11 @@ class JenkinsJobManager:
             for item in itertools.chain(self.jobs.values(), self.views.values())
         )
 
-    def gather(self):
+    def gather(self, target_job_names=None):
         """run this to gather plan/apply data"""
+        if target_job_names is not None:
+            log.debug("target_job_names=%r", target_job_names)
+            self._jobs_filter = NameRegexFilter("|".join(target_job_names))
         self.read_jobs()
         self.load_plugins_list()
         self.generate_jjb_xml()

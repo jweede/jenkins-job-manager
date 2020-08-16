@@ -8,15 +8,16 @@ authors = ["Jeremy Lavergne <github@lavergne.me>", "Jon Wedaman <jweede@gmail.co
 python = "^3.6"
 click = "^7.1.2"
 jenkins-job-builder = "^3.5.0"
-jinja2 = "^2.11.2"
+jinja2 = "^2.11"
 python-jenkins = "^1.7.0"
-
-[tool.poetry.dev-dependencies]
-pytest = "^5.2"
-tomlkit = "^0.7.0"
 
 [tool.poetry.scripts]
 jjm = 'jenkins_job_manager.cli:jjm'
+
+[tool.poetry.dev-dependencies]
+tomlkit = "^0.7.0"
+pytest = "^6.0.1"
+
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"

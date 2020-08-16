@@ -3,7 +3,7 @@
 This is a wrapper script around [Jenkins Job Builder][jjb], that adds:
  - jenkins login management
  - Preview of changes _before_ applying them, similar to [Terraform][tf].
- - A "raw" project type, so you can manage projects that [JJB][jjb] does not yet support. 
+ - A "raw" project type, so you can manage projects that [JJB][jjb] does not yet support.
 
 ## Installation
 
@@ -63,7 +63,7 @@ Check syntax, config.
 
 ### `jjm import`
 
-Import existing jenkins jobs that are missing from the specified instance as raw xml. 
+Import existing jenkins jobs that are missing from the specified instance as raw xml.
 A future release might assist by converting known modules to yaml.
 
 ### `jjm plan`
