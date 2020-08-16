@@ -43,8 +43,6 @@ def test_jjm(
     ]
     overrides_url = {"url": "https://yourjenkinsurl.com/"}
     overrides_none = {}
-    target_bogus = "bogus"
-    target_none = None
 
     # no args (no command)
     result = runner.invoke(jjm)
