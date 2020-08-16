@@ -122,7 +122,7 @@ def handle_plan_report(obj: JenkinsJobManager, use_pager=True) -> bool:
         else:
             return line
 
-    if obj.detected_changes():
+    if obj.detected_changes() is True:
         gen_lines = map(output_format, obj.plan_report())
         if use_pager is True:
             click.echo_via_pager(gen_lines)
@@ -148,7 +148,7 @@ def jjm_plan(obj: JenkinsJobManager, skip_pager: bool, target: str):
     obj.gather()
     handle_validation_errors(obj)
     changes = handle_plan_report(obj, use_pager=not skip_pager)
-    if changes:
+    if changes is True:
         raise click.exceptions.Exit(2)
 
 
@@ -162,7 +162,7 @@ def jjm_apply(obj: JenkinsJobManager, target: str):
         obj.target_job(target)
     obj.gather()
     handle_validation_errors(obj)
-    if not obj.detected_changes():
+    if obj.detected_changes() is False:
         click.secho("No changes to apply.", fg="green")
         return
     handle_plan_report(obj, use_pager=False)

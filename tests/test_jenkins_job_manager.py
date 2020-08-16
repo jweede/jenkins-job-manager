@@ -222,7 +222,7 @@ def test_jjm(
 
     # plan, no args
     result = runner.invoke(jjm, ["plan"])
-    assert result.exit_code == 2
+    assert result.exit_code == 0
     assert "ERROR" not in result.output
     log.setLevel.assert_not_called()
     JenkinsJobManager.assert_called_once_with(overrides_none)
@@ -242,7 +242,7 @@ def test_jjm(
     # plan, all args
     plan_args = ["--skip-pager", "--target", "bogus"]
     result = runner.invoke(jjm, base_args + ["plan"] + plan_args)
-    assert result.exit_code == 2
+    assert result.exit_code == 0
     assert "Usage" not in result.output
     log.setLevel.assert_called_once_with(logging.DEBUG)
     JenkinsJobManager.assert_called_once_with(overrides_url)
