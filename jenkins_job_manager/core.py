@@ -284,7 +284,7 @@ class JenkinsJobManager:
         def extract_md(job: XmlChange):
             node = ET.fromstring(job.after_xml)
             desc = node.find("./description")
-            if desc is None or desc.text is None:
+            if not desc or not desc.text:
                 log.warning("No description in jenkins job %r??", job.name)
                 return {}
             text = desc.text.replace("<!-- Managed by Jenkins Job Builder -->", "")
