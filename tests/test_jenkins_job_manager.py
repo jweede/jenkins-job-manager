@@ -34,7 +34,13 @@ def test_jjm(
     log,
 ):
     runner = click.testing.CliRunner()
-    base_args = ["-d", "-C", "/tmp", "--url", "https://yourjenkinsurl.com/"]
+    base_args = [
+        "-d",
+        "-C",
+        "/tmp",
+        "--url",
+        "https://yourjenkinsurl.com/",
+    ]
     overrides_url = {"url": "https://yourjenkinsurl.com/"}
     overrides_none = {}
 
@@ -44,11 +50,13 @@ def test_jjm(
     assert "Usage:" in result.output
     log.setLevel.assert_not_called()
     JenkinsJobManager.assert_not_called()
+    JenkinsJobManager.target_job.assert_not_called()
     jjm_check.assert_not_called()
     check_auth.assert_not_called()
     handle_validation_errors.assert_not_called()
     handle_plan_report.assert_not_called()
     JenkinsJobManager.reset_mock()
+    JenkinsJobManager.target_job.reset_mock()
     check_auth.reset_mock()
     handle_plan_report.reset_mock()
     handle_validation_errors.reset_mock()
@@ -61,11 +69,13 @@ def test_jjm(
     assert "Usage:" in result.output
     log.setLevel.assert_not_called()
     JenkinsJobManager.assert_not_called()
+    JenkinsJobManager.target_job.assert_not_called()
     jjm_check.assert_not_called()
     check_auth.assert_not_called()
     handle_validation_errors.assert_not_called()
     handle_plan_report.assert_not_called()
     JenkinsJobManager.reset_mock()
+    JenkinsJobManager.target_job.reset_mock()
     check_auth.reset_mock()
     handle_plan_report.reset_mock()
     handle_validation_errors.reset_mock()
@@ -78,11 +88,32 @@ def test_jjm(
     assert "ERROR" not in result.output
     log.setLevel.assert_not_called()
     JenkinsJobManager.assert_called_once_with(overrides_none)
+    JenkinsJobManager.target_job.assert_not_called()
     jjm_check.assert_not_called()
     check_auth.assert_called_once_with(JenkinsJobManager())
     handle_validation_errors.assert_called_once_with(JenkinsJobManager())
     handle_plan_report.assert_called_once_with(JenkinsJobManager(), use_pager=False)
     JenkinsJobManager.reset_mock()
+    JenkinsJobManager.target_job.reset_mock()
+    check_auth.reset_mock()
+    handle_plan_report.reset_mock()
+    handle_validation_errors.reset_mock()
+    jjm_check.reset_mock()
+    log.reset_mock()
+
+    # apply, all args
+    result = runner.invoke(jjm, base_args + ["apply"] + ["--target", "bogus"])
+    assert result.exit_code == 1
+    assert "ERROR" not in result.output
+    log.setLevel.assert_called_once_with(logging.DEBUG)
+    JenkinsJobManager.assert_called_once_with(overrides_url)
+    JenkinsJobManager.target_job.assert_not_called()
+    jjm_check.assert_not_called()
+    check_auth.assert_called_once_with(JenkinsJobManager())
+    handle_validation_errors.assert_called_once_with(JenkinsJobManager())
+    handle_plan_report.assert_called_once_with(JenkinsJobManager(), use_pager=False)
+    JenkinsJobManager.reset_mock()
+    JenkinsJobManager.target_job.reset_mock()
     check_auth.reset_mock()
     handle_plan_report.reset_mock()
     handle_validation_errors.reset_mock()
@@ -95,11 +126,13 @@ def test_jjm(
     assert "ERROR" not in result.output
     log.setLevel.assert_not_called()
     JenkinsJobManager.assert_called_with(overrides_none)
+    JenkinsJobManager.target_job.assert_not_called()
     jjm_check.assert_not_called()
     check_auth.assert_not_called()
     handle_validation_errors.assert_called_once_with(JenkinsJobManager())
     handle_plan_report.assert_not_called()
     JenkinsJobManager.reset_mock()
+    JenkinsJobManager.target_job.reset_mock()
     check_auth.reset_mock()
     handle_plan_report.reset_mock()
     handle_validation_errors.reset_mock()
@@ -112,12 +145,13 @@ def test_jjm(
     assert "ERROR" not in result.output
     log.setLevel.assert_called_once_with(logging.DEBUG)
     JenkinsJobManager.assert_called_once_with(overrides_url)
-    jjm_check.assert_not_called()
+    JenkinsJobManager.target_job.assert_not_called()
     jjm_check.assert_not_called()
     check_auth.assert_not_called()
     handle_plan_report.assert_not_called()
     handle_validation_errors.assert_called_once_with(JenkinsJobManager())
     JenkinsJobManager.reset_mock()
+    JenkinsJobManager.target_job.reset_mock()
     check_auth.reset_mock()
     handle_plan_report.reset_mock()
     handle_validation_errors.reset_mock()
@@ -131,11 +165,33 @@ def test_jjm(
     assert "Imported 0 jobs." in result.output
     log.setLevel.assert_not_called()
     JenkinsJobManager.assert_called_once_with(overrides_none)
+    JenkinsJobManager.target_job.assert_not_called()
     jjm_check.assert_not_called()
     check_auth.assert_called_once_with(JenkinsJobManager())
     handle_validation_errors.assert_not_called()
     handle_plan_report.assert_not_called()
     JenkinsJobManager.reset_mock()
+    JenkinsJobManager.target_job.reset_mock()
+    check_auth.reset_mock()
+    handle_plan_report.reset_mock()
+    handle_validation_errors.reset_mock()
+    jjm_check.reset_mock()
+    log.reset_mock()
+
+    # import, all args
+    result = runner.invoke(jjm, base_args + ["import"] + ["--target", "bogus"])
+    assert result.exit_code == 0
+    assert "ERROR" not in result.output
+    assert "Imported 0 jobs." in result.output
+    log.setLevel.assert_called_once_with(logging.DEBUG)
+    JenkinsJobManager.assert_called_once_with(overrides_url)
+    JenkinsJobManager.target_job.assert_not_called()
+    jjm_check.assert_not_called()
+    check_auth.assert_called_once_with(JenkinsJobManager())
+    handle_validation_errors.assert_not_called()
+    handle_plan_report.assert_not_called()
+    JenkinsJobManager.reset_mock()
+    JenkinsJobManager.target_job.reset_mock()
     check_auth.reset_mock()
     handle_plan_report.reset_mock()
     handle_validation_errors.reset_mock()
@@ -149,11 +205,13 @@ def test_jjm(
     assert "Auth already configured for this jenkins" in result.output
     log.setLevel.assert_not_called()
     JenkinsJobManager.assert_called_once_with(overrides_none)
+    JenkinsJobManager.target_job.assert_not_called()
     jjm_check.assert_not_called()
     check_auth.assert_not_called()
     handle_validation_errors.assert_not_called()
     handle_plan_report.assert_not_called()
     JenkinsJobManager.reset_mock()
+    JenkinsJobManager.target_job.reset_mock()
     check_auth.reset_mock()
     handle_plan_report.reset_mock()
     handle_validation_errors.reset_mock()
@@ -162,15 +220,37 @@ def test_jjm(
 
     # plan, no args
     result = runner.invoke(jjm, ["plan"])
-    assert result.exit_code == 2
+    assert result.exit_code == 0
     assert "ERROR" not in result.output
     log.setLevel.assert_not_called()
     JenkinsJobManager.assert_called_once_with(overrides_none)
+    JenkinsJobManager.target_job.assert_not_called()
     jjm_check.assert_not_called()
     check_auth.assert_called_once_with(JenkinsJobManager())
     handle_validation_errors.assert_called_once_with(JenkinsJobManager())
     handle_plan_report.assert_called_once_with(JenkinsJobManager(), use_pager=True)
     JenkinsJobManager.reset_mock()
+    JenkinsJobManager.target_job.reset_mock()
+    check_auth.reset_mock()
+    handle_plan_report.reset_mock()
+    handle_validation_errors.reset_mock()
+    jjm_check.reset_mock()
+    log.reset_mock()
+
+    # plan, all args
+    plan_args = ["--skip-pager", "--target", "bogus"]
+    result = runner.invoke(jjm, base_args + ["plan"] + plan_args)
+    assert result.exit_code == 0
+    assert "Usage" not in result.output
+    log.setLevel.assert_called_once_with(logging.DEBUG)
+    JenkinsJobManager.assert_called_once_with(overrides_url)
+    JenkinsJobManager.target_job.assert_not_called()
+    jjm_check.assert_not_called()
+    check_auth.assert_called_once_with(JenkinsJobManager())
+    handle_validation_errors.assert_called_once_with(JenkinsJobManager())
+    handle_plan_report.assert_called_once_with(JenkinsJobManager(), use_pager=False)
+    JenkinsJobManager.reset_mock()
+    JenkinsJobManager.target_job.reset_mock()
     check_auth.reset_mock()
     handle_plan_report.reset_mock()
     handle_validation_errors.reset_mock()
