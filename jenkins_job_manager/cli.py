@@ -15,6 +15,11 @@ log = logging.getLogger("jjm")
 HERE = os.path.dirname(os.path.realpath(__file__))
 
 
+click_option_target = click.option(
+    "--target", default=None, multiple=True, help="job name glob to target",
+)
+
+
 @click.group()
 @click.option("--debug", "-d", is_flag=True)
 @click.option("--working-dir", "-C", default=None, help="change to this directory ")
@@ -139,7 +144,7 @@ def handle_plan_report(obj: JenkinsJobManager, use_pager=True) -> bool:
 
 @jjm.command(name="plan")
 @click.option("--skip-pager", is_flag=True)
-@click.option("--target", default=None, multiple=True, help="job name regex to target")
+@click_option_target
 @click.pass_obj
 def jjm_plan(obj: JenkinsJobManager, skip_pager: bool, target: typing.List[str]):
     """check for changes"""
@@ -152,7 +157,7 @@ def jjm_plan(obj: JenkinsJobManager, skip_pager: bool, target: typing.List[str])
 
 
 @jjm.command(name="apply")
-@click.option("--target", default=None, multiple=True, help="job name regex to target")
+@click_option_target
 @click.pass_obj
 def jjm_apply(obj: JenkinsJobManager, target: str):
     """check and apply changes"""
@@ -169,7 +174,7 @@ def jjm_apply(obj: JenkinsJobManager, target: str):
 
 
 @jjm.command(name="import")
-@click.option("--target", default=None, multiple=True, help="job name regex to target")
+@click_option_target
 @click.pass_obj
 def jjm_import(obj: JenkinsJobManager, target: str):
     check_auth(obj)

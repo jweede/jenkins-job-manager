@@ -9,6 +9,7 @@ from jenkins_job_manager.xml_change import (
 
 import itertools
 import logging
+import fnmatch
 import os
 import re
 import random
@@ -37,8 +38,14 @@ class NameRegexFilter:
     def __init__(self, regexp):
         self.regex = re.compile(regexp)
 
+    @staticmethod
+    def from_glob_list(globs):
+        regexes = map(fnmatch.translate, globs)
+        combined_regex = "|".join(regexes)
+        return NameRegexFilter(combined_regex)
+
     def __call__(self, job_name):
-        m = self.regex.search(job_name)
+        m = self.regex.match(job_name)
         return True if m is not None else False
 
     def __repr__(self):
@@ -53,7 +60,7 @@ class JenkinsJobManager:
         "plugins_list",
         "_jenkins",
         "jobs",
-        "_jobs_filter",
+        "_jobs_filter_func",
         "views",
         "validation_errors",
     )
@@ -67,7 +74,7 @@ class JenkinsJobManager:
         self._jenkins: Optional[jenkins.Jenkins] = None
         self.plugins_list: Optional[list] = None
         self.jobs: Dict[str, XmlChange] = XmlChangeDefaultDict()
-        self._jobs_filter: NameRegexFilter = NameRegexFilter(".*")
+        self._jobs_filter_func: NameRegexFilter = NameRegexFilter(".*")
         self.views: Dict[str, XmlChange] = XmlChangeDefaultDict()
         self.validation_errors = []
 
@@ -81,10 +88,6 @@ class JenkinsJobManager:
                 timeout=self.config.timeout,
             )
         return self._jenkins
-
-    def set_filter_regex(self, filter_regex):
-        """filter to specific job names"""
-        self._jobs_filter = NameRegexFilter(filter_regex)
 
     def check_authentication(self):
         """check if jenkins connection config correct"""
@@ -109,7 +112,7 @@ class JenkinsJobManager:
             log.debug("found job %r", d)
             name, url, _class = d["fullname"], d["url"], d.get("_class")
             subjobs = d.get("jobs", _empty)
-            if not self._jobs_filter(name):
+            if not self._jobs_filter_func(name):
                 log.debug("Ignored by filter: %s", name)
                 continue
             elif _class in self.job_managing_job_classes:
@@ -228,7 +231,7 @@ class JenkinsJobManager:
         job_data_list, view_data_list = parser.expandYaml(registry, options_names)
 
         def job_data_filter_wrapper(job_data):
-            return self._jobs_filter(job_data["name"])
+            return self._jobs_filter_func(job_data["name"])
 
         xml_jobs = xml_job_generator.generateXML(
             filter(job_data_filter_wrapper, job_data_list)
@@ -251,9 +254,9 @@ class JenkinsJobManager:
 
     def gather(self, target_job_names=None):
         """run this to gather plan/apply data"""
-        if target_job_names is not None:
+        if target_job_names:
             log.debug("target_job_names=%r", target_job_names)
-            self._jobs_filter = NameRegexFilter("|".join(target_job_names))
+            self._jobs_filter_func = NameRegexFilter.from_glob_list(target_job_names)
         self.read_jobs()
         self.load_plugins_list()
         self.generate_jjb_xml()
@@ -317,7 +320,7 @@ class JenkinsJobManager:
         def extract_md(job: XmlChange):
             node = ET.fromstring(job.after_xml)
             desc = node.find("./description")
-            if not desc or not desc.text:
+            if desc is None or not desc.text:
                 log.warning("No description in jenkins job %r??", job.name)
                 return {}
             text = desc.text.replace("<!-- Managed by Jenkins Job Builder -->", "")
