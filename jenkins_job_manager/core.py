@@ -125,6 +125,22 @@ class JenkinsJobManager:
             job_conf = jenkins.get_job_config(name)
             jobs[name].before_xml = job_conf
 
+    def read_views(self):
+        jenkins = self.jenkins
+        views = self.views
+
+        filter_pattern = self._jobs_filter_func.regex.pattern
+        if filter_pattern != ".*":
+            log.debug("Ignoring views due to any filtering: %s", filter_pattern)
+            return
+
+        log.info("Reading jenkins view state")
+        for d in jenkins.get_views():
+            log.debug("found view %r", d)
+            name, url, _class = d["name"], d["url"], d.get("_class")
+            view_conf = jenkins.get_view_config(name)
+            views[name].before_xml = view_conf
+
     def load_plugins_list(self):
         """load plugin info in format expected by jjb libs"""
         log.debug("reading jenkins plugins")
@@ -258,6 +274,7 @@ class JenkinsJobManager:
             log.debug("target_job_names=%r", target_job_names)
             self._jobs_filter_func = NameRegexFilter.from_glob_list(target_job_names)
         self.read_jobs()
+        self.read_views()
         self.load_plugins_list()
         self.generate_jjb_xml()
 
