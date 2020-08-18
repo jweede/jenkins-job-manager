@@ -179,8 +179,10 @@ def jjm_apply(obj: JenkinsJobManager, target: str):
 def jjm_import(obj: JenkinsJobManager, target: str):
     check_auth(obj)
     obj.gather(target)
-    missing = obj.import_missing()
-    click.secho(f"Imported {len(missing)} jobs.", fg="green")
+    missing_jobs = obj.import_missing_jobs()
+    missing_views = obj.import_missing_views()
+    click.secho(f"Imported {len(missing_jobs)} jobs.", fg="green")
+    click.secho(f"Imported {len(missing_views)} views.", fg="green")
 
 
 if __name__ == "__main__":

@@ -261,7 +261,7 @@ class JenkinsJobManager:
         self.load_plugins_list()
         self.generate_jjb_xml()
 
-    def import_missing(self) -> list:
+    def import_missing_jobs(self) -> list:
         """import missing jobs as xml"""
         missing = [item for item in self.jobs.values() if item.changetype() is DELETE]
         if not missing:
@@ -312,6 +312,31 @@ class JenkinsJobManager:
         with open(self.raw_xml_yaml_path, "w") as fp:
             template.stream(raw_xml_jobs=xml_job_name_pairs).dump(fp)
         return missing
+
+    def import_missing_views(self) -> list:
+        """import missing views as xml"""
+        raise NotImplementedError()
+        missing = [item for item in self.views.values() if item.changetype() is DELETE]
+        if not missing:
+            return []
+        if os.path.exists(self.raw_xml_yaml_path):
+            parser = YamlParser(self.get_jjb_config())
+            parser.load_files([self.raw_xml_yaml_path])
+            view_data_list, _ = parser.expandYaml(FakeRegistry, [])
+            for view_data in view_data_list:
+                name = view_data["name"]
+                fname = view_name_to_file_name(name)
+                assert os.path.exists(fname)
+                xml_view_name_pairs.append((name, fname))
+        template = jinja2.Template(
+            """\
+---
+{% for view_name, file_name in raw_xml_views -%
+- view:
+   name: {{ view_name | tojson }}
+""",
+            undefined=jinja2.StrictUndefined,
+        )
 
     def validate_metadata(self):
         ET = xml.etree.ElementTree
