@@ -7,12 +7,13 @@ from jenkins_job_manager.xml_change import (
     DELETE,
 )
 
+import fnmatch
+import glob
 import itertools
 import logging
-import fnmatch
 import os
-import re
 import random
+import re
 import string
 import xml.dom.minidom
 import xml.etree.ElementTree
@@ -24,7 +25,6 @@ import jinja2
 from jenkins_jobs.parser import YamlParser
 from jenkins_jobs.registry import ModuleRegistry
 from jenkins_jobs.xml_config import XmlJob, XmlJobGenerator, XmlViewGenerator
-
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("jjm")
@@ -216,8 +216,8 @@ class JenkinsJobManager:
                 return xml_job
 
         jjb_config = self.get_jjb_config()
-        options_names = []  # normally a list of jobs globs
-        files_path = ["."]
+        options_names = []  # normally a list of jobs globs for targeting
+        files_path = glob.glob("./**/", recursive=True)
 
         parser = YamlParser(jjb_config)
         registry = ModuleRegistry(jjb_config, self.plugins_list)
