@@ -99,6 +99,20 @@ class JenkinsJobManager:
             return False
         return True
 
+    def read_views(self):
+        """read existing views from jenkins"""
+        jenkins = self.jenkins
+        views = self.views
+        log.info("Reading jenkins views state")
+        for view_d in jenkins.get_views():
+            log.debug("found view %r", view_d)
+            name, url, _class = view_d["name"], view_d["url"], view_d.get("_class")
+            if name == "all" or _class == "hudson.model.AllView":
+                log.debug("ignoring all view: %r", view_d)
+                continue
+            view_config = jenkins.get_view_config(name)
+            views[name].before_xml = view_config
+
     def read_jobs(self):
         """read existing jobs from jenkins"""
         jenkins = self.jenkins
@@ -257,6 +271,7 @@ class JenkinsJobManager:
         if target_job_names:
             log.debug("target_job_names=%r", target_job_names)
             self._jobs_filter_func = NameRegexFilter.from_glob_list(target_job_names)
+        self.read_views()
         self.read_jobs()
         self.load_plugins_list()
         self.generate_jjb_xml()
