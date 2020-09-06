@@ -26,7 +26,7 @@ Commands:
   apply   check and apply changes
   check   check syntax/config
   import
-  login   store login config per url
+  login   store creds per url
   plan    check syntax/config
 ```
 
@@ -54,6 +54,9 @@ password = someapikey
 username = myotheruser
 password = someapikey
 ```
+
+For most Jenkins setups the password will be an API key.
+Both work, just remember this is stored unencrypted.
 
 This should make managing multiple jenkins servers easier.
 
