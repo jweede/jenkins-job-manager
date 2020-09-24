@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "jenkins-job-manager"
-version = "0.3.2"
+version = "0.3.3"
 description = ""
 authors = ["Jeremy Lavergne <github@lavergne.me>", "Jon Wedaman <jweede@gmail.com>"]
 
