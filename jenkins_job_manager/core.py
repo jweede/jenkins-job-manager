@@ -93,7 +93,9 @@ class JenkinsJobManager:
         """check if jenkins connection config correct"""
         log.debug("checking credentials")
         try:
-            self.jenkins.run_script("println 'ok'")
+            result = self.jenkins.get_whoami()
+            if self.config.username != result["id"]:
+                raise RuntimeError(f"{self.config.username!r} != {result['id']!r}")
         except (jenkins.BadHTTPException, jenkins.JenkinsException) as e:
             log.debug("BadHTTPException: %s", e)
             return False
