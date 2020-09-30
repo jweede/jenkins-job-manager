@@ -3,6 +3,7 @@
 Wrapper tool for managing jenkins jobs via jenkins job builder
 """
 from jenkins_job_manager.core import JenkinsJobManager
+from jenkins_job_manager.xml_change import DELETE
 
 import click
 import logging
@@ -174,6 +175,11 @@ def jjm_apply(obj: JenkinsJobManager, target: str, allow_delete: bool):
     click.confirm(click.style("Apply changes?", bold=True), abort=True)
     changecounts, msg = obj.apply_plan()
     click.echo(msg)
+    _deletes = changecounts[DELETE]
+    if allow_delete is False and _deletes > 0:
+        click.secho(
+            f"Ignored {_deletes} deletes.\nUse --allow-delete to override.", fg="red",
+        )
 
 
 @jjm.command(name="import")
