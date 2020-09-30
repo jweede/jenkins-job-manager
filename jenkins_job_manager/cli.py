@@ -157,10 +157,13 @@ def jjm_plan(obj: JenkinsJobManager, skip_pager: bool, target: typing.List[str])
 
 
 @jjm.command(name="apply")
+@click.option("--allow-delete", is_flag=True, help="disables delete safety.")
 @click_option_target
 @click.pass_obj
-def jjm_apply(obj: JenkinsJobManager, target: str):
+def jjm_apply(obj: JenkinsJobManager, target: str, allow_delete: bool):
     """check and apply changes"""
+    if allow_delete:
+        obj.config.allow_delete = True
     check_auth(obj)
     obj.gather(target)
     handle_validation_errors(obj)

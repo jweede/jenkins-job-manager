@@ -416,6 +416,9 @@ No changes.
                 self.jenkins.reconfig_view(view.name, view.after_xml)
                 changecounts[UPDATE] += 1
             elif changetype is DELETE:
+                if not self.config.allow_delete:
+                    log.warning("refusing to delete view %s", view.name)
+                    continue
                 log.info("delete view %s", view.name)
                 self.jenkins.delete_view(view.name)
                 changecounts[DELETE] += 1
@@ -438,6 +441,9 @@ No changes.
                 self.jenkins.reconfig_job(job.name, job.after_xml)
                 changecounts[UPDATE] += 1
             elif changetype is DELETE:
+                if not self.config.allow_delete:
+                    log.warning("refusing to delete job %s", job.name)
+                    continue
                 log.info("delete job %s", job.name)
                 self.jenkins.delete_job(job.name)
                 changecounts[DELETE] += 1
