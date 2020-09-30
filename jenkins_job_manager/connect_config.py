@@ -16,15 +16,18 @@ class JenkinsConnectConfig:
 
     global_conf_path = "/etc/jjm/jenkins_creds.ini"
     user_conf_path = os.path.expanduser("~/.config/jjm/jenkins_creds.ini")
-    __slots__ = ("url", "username", "password", "timeout", "metadata")
+    __slots__ = ("url", "username", "password", "timeout", "metadata", "allow_delete")
 
-    def __init__(self, url, username, password, timeout=None, metadata=None):
+    def __init__(
+        self, url, username, password, timeout=None, metadata=None, allow_delete=False
+    ):
         if url is not None and url.endswith("/"):
             url = url[:-1]
         self.url = url
         self.username, self.password = username, password
         self.timeout = int(timeout or 60)
         self.metadata = metadata or MetadataConfig({})
+        self.allow_delete = allow_delete
 
     def __str__(self):
         return (

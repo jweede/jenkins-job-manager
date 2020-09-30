@@ -417,7 +417,10 @@ No changes.
                 changecounts[UPDATE] += 1
             elif changetype is DELETE:
                 log.info("delete view %s", view.name)
-                self.jenkins.delete_view(view.name)
+                if self.config.allow_delete:
+                    self.jenkins.delete_view(view.name)
+                else:
+                    log.warning("refusing to delete view %s", view.name)
                 changecounts[DELETE] += 1
             else:
                 raise RuntimeError(
@@ -439,7 +442,10 @@ No changes.
                 changecounts[UPDATE] += 1
             elif changetype is DELETE:
                 log.info("delete job %s", job.name)
-                self.jenkins.delete_job(job.name)
+                if self.config.allow_delete:
+                    self.jenkins.delete_job(job.name)
+                else:
+                    log.warning("refusing to delete job %s", job.name)
                 changecounts[DELETE] += 1
             else:
                 raise RuntimeError(
