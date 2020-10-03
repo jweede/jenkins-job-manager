@@ -391,8 +391,10 @@ No changes.
                 changetype = item.changetype()
                 if changetype is None:
                     continue
-                changecounts[changetype].append(item.name)
-                for line in item.difflines():
+                for i, line in enumerate(item.difflines()):
+                    # deals with the rare case that the diff shows no lines
+                    if i == 0:
+                        changecounts[changetype].append(item.name)
                     yield line
 
         report_context = {
