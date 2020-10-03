@@ -359,11 +359,9 @@ class JenkinsJobManager:
         """report on changes about to be made"""
         template = jinja2.Template(
             """\
-{% for line in obj.view_changes %}
-{{ line }}
+{% for line in obj.view_changes %}{{ line }}
 {% endfor -%}
-{% for line in obj.job_changes %}
-{{ line }}
+{% for line in obj.job_changes %}{{ line }}
 {% endfor -%}
 {% set created = obj.changecounts[CREATE] -%}
 {% set updated = obj.changecounts[UPDATE] -%}
