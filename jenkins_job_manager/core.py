@@ -359,15 +359,23 @@ class JenkinsJobManager:
         """report on changes about to be made"""
         template = jinja2.Template(
             """\
-{% for difflines in obj.views %}{% for line in difflines -%}
+{% for line in obj.view_changes %}
 {{ line }}
-{% endfor %}{% endfor -%}
-{% for difflines in obj.jobs %}{% for line in difflines -%}
+{% endfor -%}
+{% for line in obj.job_changes %}
 {{ line }}
-{% endfor %}{% endfor -%}
-{% set created, updated, deleted = obj.changecounts[CREATE], obj.changecounts[UPDATE], obj.changecounts[DELETE] -%}
+{% endfor -%}
+{% set created = obj.changecounts[CREATE] -%}
+{% set updated = obj.changecounts[UPDATE] -%}
+{% set deleted = obj.changecounts[DELETE] -%}
 {% if created or updated or deleted %}
-Jobs/Views added {{ created }}, updated {{ updated }}, removed {{ deleted }}.
+---
+
+{% macro change_names(changechar, names) -%}
+{% for name in names %} {{ changechar }} {{ name }}
+{% endfor %}{% endmacro -%}
+{{ change_names("+", created) }}{{ change_names("-", deleted) }}{{ change_names("~", updated) }}
+Jobs/Views added {{ created |length }}, updated {{ updated |length }}, removed {{ deleted |length }}.
 {% else -%}
 No changes.
 {% endif -%}
@@ -375,7 +383,7 @@ No changes.
             undefined=jinja2.StrictUndefined,
         )
 
-        changecounts = {CREATE: 0, UPDATE: 0, DELETE: 0}
+        changecounts = {CREATE: [], UPDATE: [], DELETE: []}
 
         def iter_changes(xml_dict):
             """closure to handle changecount side effect"""
@@ -383,16 +391,14 @@ No changes.
                 changetype = item.changetype()
                 if changetype is None:
                     continue
-                changecounts[changetype] += 1
-                yield item.difflines()
+                changecounts[changetype].append(item.name)
+                for line in item.difflines():
+                    yield line
 
         report_context = {
-            "views": iter_changes(self.views),
-            "jobs": iter_changes(self.jobs),
+            "view_changes": iter_changes(self.views),
+            "job_changes": iter_changes(self.jobs),
             "changecounts": changecounts,
-            "CREATE": CREATE,
-            "UPDATE": UPDATE,
-            "DELETE": DELETE,
         }
         return template.generate(
             obj=report_context, CREATE=CREATE, UPDATE=UPDATE, DELETE=DELETE
