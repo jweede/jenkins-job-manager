@@ -18,6 +18,10 @@ jjm = 'jenkins_job_manager.cli:jjm'
 tomlkit = "^0.7.0"
 pytest = "^6.0.1"
 
+[tool.black]
+line-length = 88
+target-version = ['py36']
+
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
