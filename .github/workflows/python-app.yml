@@ -18,7 +18,7 @@ jobs:
           python-version: 3.6
 
       - name: Install Poetry
-        uses: dschep/install-poetry-action@v1.2
+        uses: snok/install-poetry@v1.1.0
 
       - name: Cache Poetry virtualenv
         uses: actions/cache@v1
@@ -42,4 +42,4 @@ jobs:
         uses: pre-commit/action@v2.0.0
 
       - name: Test with pytest
-        run: poetry run pytest --cov . -n 2
+        run: poetry run pytest .
