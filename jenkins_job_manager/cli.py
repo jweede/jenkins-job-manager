@@ -17,7 +17,10 @@ HERE = os.path.dirname(os.path.realpath(__file__))
 
 
 click_option_target = click.option(
-    "--target", default=None, multiple=True, help="job name glob to target",
+    "--target",
+    default=None,
+    multiple=True,
+    help="job name glob to target",
 )
 
 
@@ -178,7 +181,8 @@ def jjm_apply(obj: JenkinsJobManager, target: str, allow_delete: bool):
     _deletes = changecounts[DELETE]
     if allow_delete is False and _deletes > 0:
         click.secho(
-            f"Ignored {_deletes} deletes.\nUse --allow-delete to override.", fg="red",
+            f"Ignored {_deletes} deletes.\nUse --allow-delete to override.",
+            fg="red",
         )
 
 
