@@ -11,29 +11,20 @@ from jenkins_jobs.xml_config import XmlJob, XmlJobGenerator
 log = logging.getLogger("jjm")
 
 
-def xml_escape(s):
-    """hacks ElementTree to give us strings escaped for xml"""
-    ET = xml.etree.ElementTree
-    a = ET.Element("a")
-    a.text = s
-    # spit out element as string, slice out the element text
-    escaped_s = ET.tostring(a, encoding="unicode")[3:-4]
-    return escaped_s
-
-
 def load_xml_escaped(path):
+    """shorthand function to work around some known issues with escaping from includes"""
     with open(path) as fp:
         contents = fp.read()
-    return xml_escape(contents)
+    return jinja2.filters.do_forceescape(contents)
 
 
 # initialize a global jinja env
 jenv = jinja2.Environment(
     loader=jinja2.FileSystemLoader(searchpath=(os.curdir,)),
+    autoescape=True,
     undefined=jinja2.StrictUndefined,
 )
 jenv.globals["load_xml_escaped"] = load_xml_escaped
-jenv.filters["xml_escape"] = xml_escape
 
 
 class RawXmlProject(jenkins_jobs.modules.base.Base):
