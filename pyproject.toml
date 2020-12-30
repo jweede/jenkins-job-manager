@@ -24,6 +24,10 @@ tomlkit = "*"
 pytest = "*"
 attrs = "*"
 
+[tool.pytest.ini_options]
+addopts = ["-q", "--junitxml=testresults.xml", "-nauto", "--cov", "jenkins_job_manager", "--cov-report", "html", "--cov-report", "term:skip-covered"]
+norecursedirs = [".venv"]
+
 [build-system]
 requires = ["poetry>=1.0"]
 build-backend = "poetry.masonry.api"
