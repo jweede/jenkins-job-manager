@@ -6,6 +6,10 @@ from jenkins_job_manager.xml_change import (
     UPDATE,
     DELETE,
 )
+from jenkins_job_manager.raw_ext import (
+    RawXmlProject,
+    XmlJobGeneratorWithRaw,
+)
 
 import fnmatch
 import glob
@@ -20,11 +24,10 @@ import xml.etree.ElementTree
 from typing import Dict, Optional
 
 import jenkins
-import jenkins_jobs.modules.base
 import jinja2
 from jenkins_jobs.parser import YamlParser
 from jenkins_jobs.registry import ModuleRegistry
-from jenkins_jobs.xml_config import XmlJob, XmlJobGenerator, XmlViewGenerator
+from jenkins_jobs.xml_config import XmlJob, XmlViewGenerator
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("jjm")
@@ -213,39 +216,6 @@ class JenkinsJobManager:
 
     def generate_jjb_xml(self):
         """render jjb yaml to xml"""
-
-        class RawXmlProject(jenkins_jobs.modules.base.Base):
-            """add a job type for raw xml"""
-
-            def root_xml(self, data):
-                xml_parent = xml.etree.ElementTree.fromstring(data["raw"])
-                return xml_parent
-
-        class XmlJobGeneratorWithRaw(XmlJobGenerator):
-            """bypasses the module loader for the raw xml job type"""
-
-            def _annotate_with_plugins(self, xml_job: XmlJob):
-                """Many elements coming out of jjb are missing plugin version data."""
-                plugins: dict = self.registry.plugins_dict
-                doc: xml.etree.ElementTree.Element = xml_job.xml
-                for node in doc.iterfind(".//*[@plugin]"):
-                    plugin_name = node.attrib["plugin"]
-                    if "@" in plugin_name:
-                        continue
-                    version = plugins[plugin_name]["version"]
-                    log.debug("annotated %r with %s@%s", node, plugin_name, version)
-                    node.attrib["plugin"] = f"{plugin_name}@{version}"
-
-            def _getXMLForData(self, data):
-                kind = data.get(self.kind_attribute, self.kind_default)
-                if kind == "raw":
-                    mod = RawXmlProject(self.registry)
-                    _xml = mod.root_xml(data)
-                    obj = XmlJob(_xml, data["name"])
-                    return obj
-                xml_job = super(XmlJobGenerator, self)._getXMLForData(data)
-                # self._annotate_with_plugins(xml_job)
-                return xml_job
 
         jjb_config = self.get_jjb_config()
         options_names = []  # normally a list of jobs globs for targeting
