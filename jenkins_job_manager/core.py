@@ -231,7 +231,7 @@ class JenkinsJobManager:
             formatted_xml_str = self.xml_dump(xml_job.xml)
             jobs[xml_job.name].after_xml = formatted_xml_str
 
-        xml_views = xml_job_generator.generateXML(
+        xml_views = xml_view_generator.generateXML(
             filter(job_data_filter_wrapper, view_data_list)
         )
         views = self.views
