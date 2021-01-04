@@ -109,11 +109,15 @@ class JenkinsJobManager:
         jenkins = self.jenkins
         views = self.views
         log.info("Reading jenkins views state")
+
         for view_d in jenkins.get_views():
             log.debug("found view %r", view_d)
             name, url, _class = view_d["name"], view_d["url"], view_d.get("_class")
-            if name == "all" or _class == "hudson.model.AllView":
-                log.debug("ignoring all view: %r", view_d)
+            if not self._jobs_filter_func(name):
+                log.debug("Ignored by filter: %s", name)
+                continue
+            if name == "All" or name == "all" or _class == "hudson.model.AllView":
+                log.debug("ignoring AllView: %r", view_d)
                 continue
             view_config = jenkins.get_view_config(name)
             views[name].before_xml = view_config
@@ -143,22 +147,6 @@ class JenkinsJobManager:
                 continue
             job_conf = jenkins.get_job_config(name)
             jobs[name].before_xml = job_conf
-
-    def read_views(self):
-        jenkins = self.jenkins
-        views = self.views
-
-        filter_pattern = self._jobs_filter_func.regex.pattern
-        if filter_pattern != ".*":
-            log.debug("Ignoring views due to any filtering: %s", filter_pattern)
-            return
-
-        log.info("Reading jenkins view state")
-        for d in jenkins.get_views():
-            log.debug("found view %r", d)
-            name, url, _class = d["name"], d["url"], d.get("_class")
-            view_conf = jenkins.get_view_config(name)
-            views[name].before_xml = view_conf
 
     def load_plugins_list(self):
         """load plugin info in format expected by jjb libs"""
@@ -243,7 +231,9 @@ class JenkinsJobManager:
             formatted_xml_str = self.xml_dump(xml_job.xml)
             jobs[xml_job.name].after_xml = formatted_xml_str
 
-        xml_views = xml_view_generator.generateXML(view_data_list)
+        xml_views = xml_job_generator.generateXML(
+            filter(job_data_filter_wrapper, view_data_list)
+        )
         views = self.views
         for xml_view in xml_views:
             views[xml_view.name].after_xml = self.xml_dump(xml_view.xml)
@@ -261,7 +251,6 @@ class JenkinsJobManager:
             self._jobs_filter_func = NameRegexFilter.from_glob_list(target_job_names)
         self.read_views()
         self.read_jobs()
-        self.read_views()
         self.load_plugins_list()
         self.generate_jjb_xml()
 
