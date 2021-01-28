@@ -1,0 +1,14 @@
+{% macro change_names(changechar, names) -%}
+{% for name in names %}
+- job:
+   name: {{ name |tojson }}
+   before_xml: {% for line in obj.view_changes %}{{ line }}{% endfor -%}
+   after_xml:  {% for line in obj.job_changes %}{{ line }}{% endfor -%}
+   diff:
+    {% set created = obj.changecounts[CREATE] -%}
+    {% set updated = obj.changecounts[UPDATE] -%}
+    {% set deleted = obj.changecounts[DELETE] -%}
+    {% if created or updated or deleted %}
+   change_type: {{ changechar |tojson }}
+
+{% endfor %}{% endmacro -%}

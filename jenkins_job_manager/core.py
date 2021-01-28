@@ -29,6 +29,9 @@ from jenkins_jobs.parser import YamlParser
 from jenkins_jobs.registry import ModuleRegistry
 from jenkins_jobs.xml_config import XmlJob, XmlViewGenerator
 
+HERE = os.path.dirname(os.path.realpath(__file__))
+SCRIPT_NAME = os.path.basename(os.path.realpath(__file__))
+J2_DIR = f"{HERE}/j2_templates"
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("jjm")
 
@@ -80,6 +83,11 @@ class JenkinsJobManager:
         self._jobs_filter_func: NameRegexFilter = NameRegexFilter(".*")
         self.views: Dict[str, XmlChange] = XmlChangeDefaultDict()
         self.validation_errors = []
+        self.jenv = jinja2.Environment(
+            loader=jinja2.FileSystemLoader([J2_DIR]), undefined=jinja2.StrictUndefined
+        )
+        t = self.jenv.globals
+        t["plan_report"] = self
 
     @property
     def jenkins(self):
@@ -278,19 +286,7 @@ class JenkinsJobManager:
                 fname = job_name_to_file_name(name)
                 assert os.path.exists(fname)
                 xml_job_name_pairs.append((name, fname))
-        template = jinja2.Template(
-            """\
----
-{% for job_name, file_name in raw_xml_jobs -%}
-- job:
-   name: {{ job_name |tojson }}
-   project-type: raw
-   raw: !include-raw: {{ file_name }}
-
-{% endfor -%}
-""",
-            undefined=jinja2.StrictUndefined,
-        )
+        template = self.jenv.get_template("raw_xml_import.j2")
 
         for mxml in missing:
             job_name = mxml.name
@@ -331,31 +327,14 @@ class JenkinsJobManager:
             for warning in warnings:
                 yield job.name, warning
 
-    def plan_report(self):
+    def plan_report(self, report_format):
         """report on changes about to be made"""
-        template = jinja2.Template(
-            """\
-{% for line in obj.view_changes %}{{ line }}
-{% endfor -%}
-{% for line in obj.job_changes %}{{ line }}
-{% endfor -%}
-{% set created = obj.changecounts[CREATE] -%}
-{% set updated = obj.changecounts[UPDATE] -%}
-{% set deleted = obj.changecounts[DELETE] -%}
-{% if created or updated or deleted %}
----
-
-{% macro change_names(changechar, names) -%}
-{% for name in names %} {{ changechar }} {{ name }}
-{% endfor %}{% endmacro -%}
-{{ change_names("+", created) }}{{ change_names("-", deleted) }}{{ change_names("~", updated) }}
-Jobs/Views added {{ created |length }}, updated {{ updated |length }}, removed {{ deleted |length }}.
-{% else -%}
-No changes.
-{% endif -%}
-""",
-            undefined=jinja2.StrictUndefined,
-        )
+        if report_format == "default":
+            template = self.jenv.get_template("default.j2")
+        elif report_format == "--json":
+            template = self.jenv.get_template("json.j2")
+        elif report_format == "--yaml":
+            template = self.jenv.get_template("yaml.j2")
 
         changecounts = {CREATE: [], UPDATE: [], DELETE: []}
 
