@@ -121,7 +121,9 @@ def check_auth(obj: JenkinsJobManager):
         raise click.exceptions.Exit(1)
 
 
-def handle_plan_report(obj: JenkinsJobManager, use_pager=True) -> bool:
+def handle_plan_report(
+    obj: JenkinsJobManager, use_pager=True, report_format="default"
+) -> bool:
     """cli helper for plan report"""
 
     def output_format(line):
@@ -133,7 +135,7 @@ def handle_plan_report(obj: JenkinsJobManager, use_pager=True) -> bool:
             return line
 
     if obj.detected_changes() is True:
-        gen_lines = map(output_format, obj.plan_report())
+        gen_lines = map(output_format, obj.plan_report(report_format))
         if use_pager is True:
             click.echo_via_pager(gen_lines)
         else:
@@ -148,14 +150,25 @@ def handle_plan_report(obj: JenkinsJobManager, use_pager=True) -> bool:
 
 @jjm.command(name="plan")
 @click.option("--skip-pager", is_flag=True)
+@click.option("--json", help="Display the plan report in json format.")
+@click.option("--yaml", help="Display the plan report in yaml format.")
 @click_option_target
 @click.pass_obj
-def jjm_plan(obj: JenkinsJobManager, skip_pager: bool, target: typing.List[str]):
+def jjm_plan(
+    obj: JenkinsJobManager,
+    skip_pager: bool,
+    report_format: str,
+    target: typing.List[str],
+):
     """check for changes"""
     check_auth(obj)
     obj.gather(target)
     handle_validation_errors(obj)
-    changes = handle_plan_report(obj, use_pager=not skip_pager)
+    if report_format == "":
+        report_format = "default"
+    changes = handle_plan_report(
+        obj, use_pager=not skip_pager, report_format=report_format
+    )
     if changes is True:
         raise click.exceptions.Exit(2)
 
@@ -174,7 +187,7 @@ def jjm_apply(obj: JenkinsJobManager, target: str, allow_delete: bool):
     if obj.detected_changes() is False:
         click.secho("No changes to apply.", fg="green")
         return
-    handle_plan_report(obj, use_pager=False)
+    handle_plan_report(obj, use_pager=False, report_format="default")
     click.confirm(click.style("Apply changes?", bold=True), abort=True)
     changecounts, msg = obj.apply_plan()
     click.echo(msg)
