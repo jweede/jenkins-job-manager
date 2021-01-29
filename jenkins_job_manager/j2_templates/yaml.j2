@@ -1,14 +1,10 @@
-{% macro change_names(changechar, names) -%}
-{% for name in names %}
+{% for job_name, team_name, before_xml, after_xml, difflines, changetype in obj.job_details %}
+---
 - job:
-   name: {{ name |tojson }}
-   before_xml: {% for line in obj.view_changes %}{{ line }}{% endfor -%}
-   after_xml:  {% for line in obj.job_changes %}{{ line }}{% endfor -%}
-   diff:
-    {% set created = obj.changecounts[CREATE] -%}
-    {% set updated = obj.changecounts[UPDATE] -%}
-    {% set deleted = obj.changecounts[DELETE] -%}
-    {% if created or updated or deleted %}
-   change_type: {{ changechar |tojson }}
-
-{% endfor %}{% endmacro -%}
+   name: {{ job_name }}
+   team: {{ team_name }}
+   before_xml: {{ before_xml }}
+   after_xml:  {{ after_xml }}
+   diff: {{ difflines }}
+   change_type: {{ changetype }}
+{% endfor -%}

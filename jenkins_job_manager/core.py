@@ -28,6 +28,7 @@ import jinja2
 from jenkins_jobs.parser import YamlParser
 from jenkins_jobs.registry import ModuleRegistry
 from jenkins_jobs.xml_config import XmlJob, XmlViewGenerator
+import json
 
 HERE = os.path.dirname(os.path.realpath(__file__))
 SCRIPT_NAME = os.path.basename(os.path.realpath(__file__))
@@ -69,6 +70,7 @@ class JenkinsJobManager:
         "_jobs_filter_func",
         "views",
         "validation_errors",
+        "jenv"
     )
     job_managing_job_classes = frozenset(["jenkins.branch.OrganizationFolder"])
     raw_xml_yaml_path = "./raw_xml_jobs.yaml"
@@ -83,11 +85,9 @@ class JenkinsJobManager:
         self._jobs_filter_func: NameRegexFilter = NameRegexFilter(".*")
         self.views: Dict[str, XmlChange] = XmlChangeDefaultDict()
         self.validation_errors = []
-        self.jenv = jinja2.Environment(
-            loader=jinja2.FileSystemLoader([J2_DIR]), undefined=jinja2.StrictUndefined
-        )
+        self.jenv = jinja2.Environment(loader=jinja2.FileSystemLoader([J2_DIR]), undefined=jinja2.StrictUndefined)
         t = self.jenv.globals
-        t["plan_report"] = self
+        t["jjm"] = self
 
     @property
     def jenkins(self):
@@ -327,13 +327,13 @@ class JenkinsJobManager:
             for warning in warnings:
                 yield job.name, warning
 
-    def plan_report(self, report_format):
+    def plan_report(self, report_format='default'):
         """report on changes about to be made"""
         if report_format == "default":
             template = self.jenv.get_template("default.j2")
-        elif report_format == "--json":
+        elif report_format == "json":
             template = self.jenv.get_template("json.j2")
-        elif report_format == "--yaml":
+        elif report_format == "yaml":
             template = self.jenv.get_template("yaml.j2")
 
         changecounts = {CREATE: [], UPDATE: [], DELETE: []}
@@ -350,11 +350,29 @@ class JenkinsJobManager:
                         changecounts[changetype].append(item.name)
                     yield line
 
-        report_context = {
-            "view_changes": iter_changes(self.views),
-            "job_changes": iter_changes(self.jobs),
-            "changecounts": changecounts,
-        }
+        def job_details(xml_dict):
+            for job in xml_dict.values():
+                if job.after_xml is None:
+                    continue
+                for line in job.before_xml.split('\n'):
+                    if 'Team: ' in line:
+                        if '&' in line:
+                            team_name = line[6:line.find('&')]
+                        else:
+                            team_name = line[6:]
+                yield job.name, team_name, json.dumps(job.before_xml, indent=4), json.dumps(job.after_xml, indent=4), job.difflines(), job.changetype()
+
+        if report_format == "default":
+            report_context = {
+                "view_changes": iter_changes(self.views),
+                "job_changes": iter_changes(self.jobs),
+                "changecounts": changecounts,
+            }
+        else:
+            report_context = {
+                "job_details": job_details(self.jobs),
+            }
+
         return template.generate(
             obj=report_context, CREATE=CREATE, UPDATE=UPDATE, DELETE=DELETE
         )

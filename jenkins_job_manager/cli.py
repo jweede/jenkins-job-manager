@@ -121,9 +121,7 @@ def check_auth(obj: JenkinsJobManager):
         raise click.exceptions.Exit(1)
 
 
-def handle_plan_report(
-    obj: JenkinsJobManager, use_pager=True, report_format="default"
-) -> bool:
+def handle_plan_report(obj: JenkinsJobManager, use_pager=True) -> bool:
     """cli helper for plan report"""
 
     def output_format(line):
@@ -135,7 +133,7 @@ def handle_plan_report(
             return line
 
     if obj.detected_changes() is True:
-        gen_lines = map(output_format, obj.plan_report(report_format))
+        gen_lines = map(output_format, obj.plan_report())
         if use_pager is True:
             click.echo_via_pager(gen_lines)
         else:
@@ -148,27 +146,39 @@ def handle_plan_report(
     return changes
 
 
+def specific_format_plan_report(obj: JenkinsJobManager, output='default') -> bool:
+    """cli helper for plan report"""
+
+    if obj.detected_changes() is True:
+        for line in obj.plan_report(output):
+            click.echo(line, nl=False)
+        changes = True
+    else:
+        click.secho("No changes.", fg="green")
+        changes = False
+    return changes
+
+
 @jjm.command(name="plan")
 @click.option("--skip-pager", is_flag=True)
-@click.option("--json", help="Display the plan report in json format.")
-@click.option("--yaml", help="Display the plan report in yaml format.")
+@click.option('--output',
+              type=click.Choice(['json', 'yaml'], case_sensitive=False))
 @click_option_target
 @click.pass_obj
 def jjm_plan(
     obj: JenkinsJobManager,
     skip_pager: bool,
-    report_format: str,
+    output: str,
     target: typing.List[str],
 ):
     """check for changes"""
     check_auth(obj)
     obj.gather(target)
     handle_validation_errors(obj)
-    if report_format == "":
-        report_format = "default"
-    changes = handle_plan_report(
-        obj, use_pager=not skip_pager, report_format=report_format
-    )
+    if output:
+        changes = specific_format_plan_report(obj, output=output)
+    else:
+        changes = handle_plan_report(obj, use_pager=not skip_pager)
     if changes is True:
         raise click.exceptions.Exit(2)
 
@@ -187,7 +197,7 @@ def jjm_apply(obj: JenkinsJobManager, target: str, allow_delete: bool):
     if obj.detected_changes() is False:
         click.secho("No changes to apply.", fg="green")
         return
-    handle_plan_report(obj, use_pager=False, report_format="default")
+    handle_plan_report(obj, use_pager=False)
     click.confirm(click.style("Apply changes?", bold=True), abort=True)
     changecounts, msg = obj.apply_plan()
     click.echo(msg)
