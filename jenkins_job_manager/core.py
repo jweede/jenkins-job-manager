@@ -326,28 +326,26 @@ class JenkinsJobManager:
 
         def iter_changes(xml_dict, output='default'):
             """closure to handle changecount side effect"""
-            if output == "default":
-                # This processes views and jobs
-                for item in xml_dict.values():
-                    changetype = item.changetype()
-                    if changetype is None:
-                        continue
+
+            for item in xml_dict.values():
+                changetype = item.changetype()
+                if changetype is None:
+                    continue
+                if output == "default":
                     for i, line in enumerate(item.difflines()):
                         # deals with the rare case that the diff shows no lines
                         if i == 0:
                             changecounts[changetype].append(item.name)
                         yield line
-            else:
-                # This only processes jobs
-                for job in xml_dict.values():
-                    if job.after_xml is None or job.changetype() is None:
+                else:
+                    if item.after_xml is None:
                         continue
-                    if job.extract_md() is not None:
-                        for k, v in job.extract_md().items():
+                    if item.extract_md() is not None:
+                        for k, v in item.extract_md().items():
                             md = v
                     else:
                         md = ''
-                    yield job.name, job.before_xml, job.after_xml, job.difflines(), md, job.changetype()
+                    yield item.name, item.before_xml, item.after_xml, item.difflines(), md, item.changetype()
 
         report_context = {
             "view_changes": iter_changes(self.views),
