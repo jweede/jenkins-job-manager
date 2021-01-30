@@ -303,26 +303,12 @@ class JenkinsJobManager:
         return missing
 
     def validate_metadata(self):
-        ET = xml.etree.ElementTree
         md_conf = self.config.metadata
-
-        def extract_md(job: XmlChange):
-            node = ET.fromstring(job.after_xml)
-            desc = node.find("./description")
-            if desc is None or not desc.text:
-                log.warning("No description in jenkins job %r??", job.name)
-                return {}
-            text = desc.text.replace("<!-- Managed by Jenkins Job Builder -->", "")
-            md = {
-                m.group(1): m.group(2)
-                for m in re.finditer(r"^\s*([\w-]+):\s*([\w -]+)\s*$", text, flags=re.M)
-            }
-            return md
 
         for job in self.jobs.values():
             if job.after_xml is None:
                 continue
-            md = extract_md(job)
+            md = job.extract_md()
             warnings = md_conf.validate(md)
             for warning in warnings:
                 yield job.name, warning
@@ -338,40 +324,36 @@ class JenkinsJobManager:
 
         changecounts = {CREATE: [], UPDATE: [], DELETE: []}
 
-        def iter_changes(xml_dict):
+        def iter_changes(xml_dict, output='default'):
             """closure to handle changecount side effect"""
-            for item in xml_dict.values():
-                changetype = item.changetype()
-                if changetype is None:
-                    continue
-                for i, line in enumerate(item.difflines()):
-                    # deals with the rare case that the diff shows no lines
-                    if i == 0:
-                        changecounts[changetype].append(item.name)
-                    yield line
+            if output == "default":
+                # This processes views and jobs
+                for item in xml_dict.values():
+                    changetype = item.changetype()
+                    if changetype is None:
+                        continue
+                    for i, line in enumerate(item.difflines()):
+                        # deals with the rare case that the diff shows no lines
+                        if i == 0:
+                            changecounts[changetype].append(item.name)
+                        yield line
+            else:
+                # This only processes jobs
+                for job in xml_dict.values():
+                    if job.after_xml is None or job.changetype() is None:
+                        continue
+                    if job.extract_md() is not None:
+                        for k, v in job.extract_md().items():
+                            md = v
+                    else:
+                        md = ''
+                    yield job.name, job.before_xml, job.after_xml, job.difflines(), md, job.changetype()
 
-        def job_details(xml_dict):
-            for job in xml_dict.values():
-                if job.after_xml is None:
-                    continue
-                for line in job.before_xml.split('\n'):
-                    if 'Team: ' in line:
-                        if '&' in line:
-                            team_name = line[6:line.find('&')]
-                        else:
-                            team_name = line[6:]
-                yield job.name, team_name, json.dumps(job.before_xml, indent=4), json.dumps(job.after_xml, indent=4), job.difflines(), job.changetype()
-
-        if report_format == "default":
-            report_context = {
-                "view_changes": iter_changes(self.views),
-                "job_changes": iter_changes(self.jobs),
-                "changecounts": changecounts,
-            }
-        else:
-            report_context = {
-                "job_details": job_details(self.jobs),
-            }
+        report_context = {
+            "view_changes": iter_changes(self.views),
+            "job_changes": iter_changes(self.jobs, report_format),
+            "changecounts": changecounts,
+        }
 
         return template.generate(
             obj=report_context, CREATE=CREATE, UPDATE=UPDATE, DELETE=DELETE
