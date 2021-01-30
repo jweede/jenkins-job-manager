@@ -1,10 +1,16 @@
-{% for job_name, team_name, before_xml, after_xml, difflines, changetype in obj.job_details %}
+{% for job_name, before_xml, after_xml, difflines, md, changetype in obj.job_changes %}
 ---
 - job:
    name: {{ job_name }}
-   team: {{ team_name }}
-   before_xml: {{ before_xml }}
-   after_xml:  {{ after_xml }}
-   diff: {{ difflines }}
+   before_xml:
+       {% for line in before_xml.splitlines() %}{{ line }}
+       {% endfor %}
+   after_xml:
+       {% for line in after_xml.splitlines() %}{{ line }}
+       {% endfor %}
+   diff:
+      {% for line in difflines %}{{ line }}
+      {% endfor %}
+   metadata: {{ md }}
    change_type: {{ changetype }}
 {% endfor -%}

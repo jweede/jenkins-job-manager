@@ -1,6 +1,8 @@
 import difflib
 import operator
 import xml.dom.minidom
+import xml.etree.ElementTree
+import re
 
 from collections import defaultdict
 from xml.dom import Node
@@ -48,6 +50,20 @@ class XmlChange:
 
         root.normalize()
         return root.toprettyxml(indent="  ")
+
+    def extract_md(self):
+        et = xml.etree.ElementTree
+        node = et.fromstring(self._after)
+        desc = node.find("./description")
+        if desc is None or not desc.text:
+            log.warning("No description in jenkins job %r??", job.name)
+            return {}
+        text = desc.text.replace("<!-- Managed by Jenkins Job Builder -->", "")
+        md = {
+            m.group(1): m.group(2)
+            for m in re.finditer(r"^\s*([\w-]+):\s*([\w -]+)\s*$", text, flags=re.M)
+        }
+        return md
 
     def changetype(self):
         if self._before == self._after:

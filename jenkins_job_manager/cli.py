@@ -121,7 +121,7 @@ def check_auth(obj: JenkinsJobManager):
         raise click.exceptions.Exit(1)
 
 
-def handle_plan_report(obj: JenkinsJobManager, use_pager=True) -> bool:
+def handle_plan_report(obj: JenkinsJobManager, use_pager=True, output='default') -> bool:
     """cli helper for plan report"""
 
     def output_format(line):
@@ -133,25 +133,15 @@ def handle_plan_report(obj: JenkinsJobManager, use_pager=True) -> bool:
             return line
 
     if obj.detected_changes() is True:
-        gen_lines = map(output_format, obj.plan_report())
+        if output == 'default':
+            gen_lines = map(output_format, obj.plan_report())
+        else:
+            gen_lines = obj.plan_report(output)
         if use_pager is True:
             click.echo_via_pager(gen_lines)
         else:
             for line in gen_lines:
                 click.echo(line, nl=False)
-        changes = True
-    else:
-        click.secho("No changes.", fg="green")
-        changes = False
-    return changes
-
-
-def specific_format_plan_report(obj: JenkinsJobManager, output='default') -> bool:
-    """cli helper for plan report"""
-
-    if obj.detected_changes() is True:
-        for line in obj.plan_report(output):
-            click.echo(line, nl=False)
         changes = True
     else:
         click.secho("No changes.", fg="green")
@@ -176,7 +166,7 @@ def jjm_plan(
     obj.gather(target)
     handle_validation_errors(obj)
     if output:
-        changes = specific_format_plan_report(obj, output=output)
+        changes = handle_plan_report(obj, use_pager=not skip_pager, output=output)
     else:
         changes = handle_plan_report(obj, use_pager=not skip_pager)
     if changes is True:
