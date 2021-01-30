@@ -324,7 +324,7 @@ class JenkinsJobManager:
 
         changecounts = {CREATE: [], UPDATE: [], DELETE: []}
 
-        def iter_changes(xml_dict, output):
+        def iter_changes(xml_dict, output='default'):
             """closure to handle changecount side effect"""
             if output == "default":
                 # This processes views and jobs
@@ -350,7 +350,7 @@ class JenkinsJobManager:
                     yield job.name, job.before_xml, job.after_xml, job.difflines(), md, job.changetype()
 
         report_context = {
-            "view_changes": iter_changes(self.views, report_format),
+            "view_changes": iter_changes(self.views),
             "job_changes": iter_changes(self.jobs, report_format),
             "changecounts": changecounts,
         }
