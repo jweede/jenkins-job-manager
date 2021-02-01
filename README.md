@@ -71,7 +71,8 @@ A future release might assist by converting known modules to yaml.
 
 ### `jjm plan`
 
-Shows changes that would be applied by a run.
+Shows changes that would be applied by a run in human-readable format.
+Use `--output` for report in `json` or `yaml` output.
 
 ### `jjm apply`
 
