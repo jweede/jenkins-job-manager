@@ -1,8 +1,8 @@
 import os
 import pathlib
 from dataclasses import dataclass
-from functools import partial
 from unittest import mock
+from operator import attrgetter
 
 import pytest
 import yaml
@@ -10,21 +10,6 @@ from click.testing import CliRunner
 from jenkins_job_manager.cli import jjm
 
 HERE = os.path.dirname(os.path.realpath(__file__))
-
-
-@pytest.fixture(scope="function")
-def jjm_runner():
-    runner = CliRunner()
-    with runner.isolated_filesystem():
-        pathlib.Path("./jjm.ini").write_text(
-            f"""\
-[jenkins]
-url = {FakeJenkins._url}
-username = {FakeJenkins._username}
-password = {FakeJenkins._password}
-"""
-        )
-        yield partial(runner.invoke, jjm, catch_exceptions=False)
 
 
 class FakeJenkins:
@@ -38,6 +23,14 @@ class FakeJenkins:
         self.views: list = views or []
         self.jobs: list = jobs or []
 
+    def ini_conf(self):
+        return f"""\
+[jenkins]
+url = {self._url}
+username = {self._username}
+password = {self._password}
+"""
+
     def get_whoami(self):
         return {"id": self._username}
 
@@ -46,11 +39,11 @@ class FakeJenkins:
 
     def get_views(self):
         return (
-            dict(
-                name=d["name"],
-                url=f"{self._url}/view/{d['name']}",
-                _class=d.get("class") or "hudson.View.Something",
-            )
+            {
+                "name": d["name"],
+                "url": f"{self._url}/view/{d['name']}",
+                "_class": d.get("class") or "hudson.View.Something",
+            }
             for d in self.views
         )
 
@@ -62,11 +55,11 @@ class FakeJenkins:
 
     def get_all_jobs(self):
         return (
-            dict(
-                fullname=d["name"],
-                url=f"{self._url}/job/{d['name']}",
-                _class=d.get("class") or "jenkins.job.FreeStyleOrSomething",
-            )
+            {
+                "fullname": d["name"],
+                "url": f"{self._url}/job/{d['name']}",
+                "_class": d.get("class") or "jenkins.job.FreeStyleOrSomething",
+            }
             for d in self.jobs
         )
 
@@ -77,9 +70,9 @@ class FakeJenkins:
         return None
 
 
-@dataclass
+@dataclass(frozen=True)
 class JCase:
-    """quick schema for these test cases"""
+    """quick test case schema for the yaml docs"""
 
     name: str
     local: str
@@ -91,22 +84,21 @@ class JCase:
 def _test_cases():
     with open(f"{HERE}/test_output_render.yml", "r") as fp:
         test_cases = yaml.safe_load_all(fp)
-        for test_case in test_cases:
-            if test_case is None:
-                continue
+        for test_case in filter(bool, test_cases):
             yield JCase(**test_case)
 
 
-@pytest.mark.parametrize("test_case", _test_cases())
-@mock.patch("jenkins_job_manager.core.JenkinsJobManager.jenkins", autospec=True)
-def test_jjm_default_plan_output(
-    jenkins_api: mock.MagicMock, test_case: JCase, jjm_runner
-):
+@pytest.mark.parametrize(
+    "test_case", _test_cases(), ids=map(attrgetter("name"), _test_cases())
+)
+def test_jjm_default_plan_output(test_case: JCase):
     fake_jenkins = FakeJenkins(**test_case.remote)
-    with mock.patch("jenkins_job_manager.core.JenkinsJobManager.jenkins", fake_jenkins):
-        # this assumes the "jjm_runner" fixture has us in an isolated filesystem
+    mfj = mock.patch("jenkins_job_manager.core.JenkinsJobManager.jenkins", fake_jenkins)
+    runner = CliRunner()
+    with mfj, runner.isolated_filesystem():
+        pathlib.Path("./jjm.ini").write_text(fake_jenkins.ini_conf())
         pathlib.Path("./job.yml").write_text(test_case.local)
 
-        result = jjm_runner(["plan", "--skip-pager"])
+        result = runner.invoke(jjm, ["plan", "--skip-pager"], catch_exceptions=False)
         assert result.output == test_case.output_default
         assert result.exit_code == 0
