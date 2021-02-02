@@ -1,13 +1,13 @@
----
 # Each yaml doc is a test case
+---
 name: no changes
 local: |
   ---
   - job:
-      name: dumb test job
-      display-name: Dumb Test Job
+      name: test job
+      display-name: Test Job
       description: |
-        A dumb test job
+        A test job
 
         Team: Test
       project-type: freestyle
@@ -24,7 +24,7 @@ local: |
 remote:
   views: []
   jobs:
-    - name: dumb test job
+    - name: test job
       xml: |
         <?xml version="1.0" ?>
         <project>
@@ -41,11 +41,11 @@ remote:
           </builders>
           <canRoam>true</canRoam>
           <concurrentBuild>false</concurrentBuild>
-        <description>A dumb test job
+        <description>A test job
 
         Team: Test
         &lt;!-- Managed by Jenkins Job Builder --&gt;</description>
-          <displayName>Dumb Test Job</displayName>
+          <displayName>Test Job</displayName>
           <keepDependencies>false</keepDependencies>
           <properties>
             <jenkins.model.BuildDiscarderProperty>
@@ -67,4 +67,93 @@ remote:
         </project>
 output_default: |
   No changes.
+output_struct: []
+---
+name: one line change
+local: |
+  ---
+  - job:
+      name: test job
+      display-name: Test Job
+      description: |
+        A test job
+
+        Team: Test
+      project-type: freestyle
+      concurrent: false
+      properties:
+        - build-discarder:
+            num-to-keep: 10
+      triggers: [ { timed: '@hourly' } ]
+      builders:
+        - shell: |
+            #!/usr/bin/env bash
+            set -eux
+            echo "hi!"
+remote:
+  views: []
+  jobs:
+    - name: test job
+      xml: |
+        <?xml version="1.0" ?>
+        <project>
+          <actions/>
+          <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+          <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+          <buildWrappers/>
+          <builders>
+            <hudson.tasks.Shell>
+              <command>#!/usr/bin/env bash
+        set -eux
+        echo &quot;goodbye!&quot;</command>
+            </hudson.tasks.Shell>
+          </builders>
+          <canRoam>true</canRoam>
+          <concurrentBuild>false</concurrentBuild>
+        <description>A test job
+
+        Team: Test
+        &lt;!-- Managed by Jenkins Job Builder --&gt;</description>
+          <displayName>Test Job</displayName>
+          <keepDependencies>false</keepDependencies>
+          <properties>
+            <jenkins.model.BuildDiscarderProperty>
+              <strategy class="hudson.tasks.LogRotator">
+                <daysToKeep>-1</daysToKeep>
+                <numToKeep>10</numToKeep>
+                <artifactDaysToKeep>-1</artifactDaysToKeep>
+                <artifactNumToKeep>-1</artifactNumToKeep>
+              </strategy>
+            </jenkins.model.BuildDiscarderProperty>
+          </properties>
+          <publishers/>
+          <scm class="hudson.scm.NullSCM"/>
+          <triggers class="vector">
+            <hudson.triggers.TimerTrigger>
+              <spec>@hourly</spec>
+            </hudson.triggers.TimerTrigger>
+          </triggers>
+        </project>
+output_default: |
+  --- test job
+
+  +++ test job
+
+  @@ -8,7 +8,7 @@
+
+       <hudson.tasks.Shell>
+         <command>#!/usr/bin/env bash
+   set -eux
+  -echo &quot;goodbye!&quot;</command>
+  +echo &quot;hi!&quot;</command>
+       </hudson.tasks.Shell>
+     </builders>
+     <canRoam>true</canRoam>
+
+  ---
+
+   ~ test job
+
+  Jobs/Views added 0, updated 1, removed 0.
+
 output_struct: []

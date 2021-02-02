@@ -4,6 +4,7 @@ repos:
     hooks:
       - id: check-json
       - id: check-yaml
+        args: ['--allow-multiple-documents']
         exclude: '^jenkins/jjb-.*$'
       - id: end-of-file-fixer
       - id: trailing-whitespace
