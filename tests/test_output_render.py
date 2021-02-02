@@ -1,9 +1,9 @@
 import os
 import pathlib
-from dataclasses import dataclass
 from unittest import mock
 from operator import attrgetter
 
+import attr
 import pytest
 import yaml
 from click.testing import CliRunner
@@ -70,15 +70,15 @@ password = {self._password}
         return None
 
 
-@dataclass(frozen=True)
+@attr.s(slots=True, frozen=True)
 class JCase:
     """quick test case schema for the yaml docs"""
 
-    name: str
-    local: str
-    remote: dict
-    output_default: str
-    output_struct: list
+    name: str = attr.ib()
+    local: str = attr.ib()
+    remote: dict = attr.ib()
+    output_default: str = attr.ib()
+    output_struct: list = attr.ib()
 
 
 def _test_cases():
