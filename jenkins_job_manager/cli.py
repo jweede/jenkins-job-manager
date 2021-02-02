@@ -121,7 +121,7 @@ def check_auth(obj: JenkinsJobManager):
         raise click.exceptions.Exit(1)
 
 
-def handle_plan_report(obj: JenkinsJobManager, use_pager=True, output='default') -> bool:
+def handle_plan_report(obj: JenkinsJobManager, use_pager=True, output=None) -> bool:
     """cli helper for plan report"""
 
     def output_format(line):
@@ -133,10 +133,10 @@ def handle_plan_report(obj: JenkinsJobManager, use_pager=True, output='default')
             return line
 
     if obj.detected_changes() is True:
-        if output == 'default':
-            gen_lines = map(output_format, obj.plan_report())
-        else:
+        if output:
             gen_lines = obj.plan_report(output)
+        else:
+            gen_lines = map(output_format, obj.plan_report())
         if use_pager is True:
             click.echo_via_pager(gen_lines)
         else:
@@ -151,8 +151,7 @@ def handle_plan_report(obj: JenkinsJobManager, use_pager=True, output='default')
 
 @jjm.command(name="plan")
 @click.option("--skip-pager", is_flag=True)
-@click.option('--output',
-              type=click.Choice(['json', 'yaml'], case_sensitive=False))
+@click.option('--output', default=None, type=click.Choice(['json', 'yaml'], case_sensitive=False))
 @click_option_target
 @click.pass_obj
 def jjm_plan(
@@ -165,10 +164,7 @@ def jjm_plan(
     check_auth(obj)
     obj.gather(target)
     handle_validation_errors(obj)
-    if output:
-        changes = handle_plan_report(obj, use_pager=not skip_pager, output=output)
-    else:
-        changes = handle_plan_report(obj, use_pager=not skip_pager)
+    changes = handle_plan_report(obj, use_pager=not skip_pager, output=output)
     if changes is True:
         raise click.exceptions.Exit(2)
 

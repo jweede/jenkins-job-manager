@@ -313,31 +313,25 @@ class JenkinsJobManager:
             for warning in warnings:
                 yield job.name, warning
 
-    def plan_report(self, report_format='default'):
+    def plan_report(self, report_format=None):
         """report on changes about to be made"""
-        if report_format == "default":
-            template = self.jenv.get_template("default.j2")
-        elif report_format == "json":
+        if report_format == "json":
             template = self.jenv.get_template("json.j2")
         elif report_format == "yaml":
             template = self.jenv.get_template("yaml.j2")
+        else:
+            template = self.jenv.get_template("default.j2")
 
         changecounts = {CREATE: [], UPDATE: [], DELETE: []}
 
-        def iter_changes(xml_dict, output='default'):
+        def iter_changes(xml_dict, output=None):
             """closure to handle changecount side effect"""
 
             for item in xml_dict.values():
                 changetype = item.changetype()
                 if changetype is None:
                     continue
-                if output == "default":
-                    for i, line in enumerate(item.difflines()):
-                        # deals with the rare case that the diff shows no lines
-                        if i == 0:
-                            changecounts[changetype].append(item.name)
-                        yield line
-                else:
+                if output:
                     if item.after_xml is None:
                         continue
                     if item.extract_md() is not None:
@@ -346,6 +340,12 @@ class JenkinsJobManager:
                     else:
                         md = ''
                     yield item.name, item.before_xml, item.after_xml, item.difflines(), md, item.changetype()
+                else:
+                    for i, line in enumerate(item.difflines()):
+                        # deals with the rare case that the diff shows no lines
+                        if i == 0:
+                            changecounts[changetype].append(item.name)
+                        yield line
 
         report_context = {
             "view_changes": iter_changes(self.views),
