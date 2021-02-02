@@ -1,5 +1,5 @@
 ---
-# easier to spec out this way
+# Each yaml doc is a test case
 name: no changes
 local: |
   ---
