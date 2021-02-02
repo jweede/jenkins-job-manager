@@ -2,6 +2,7 @@ import os
 import pathlib
 from unittest import mock
 from operator import attrgetter
+import json
 
 import attr
 import pytest
@@ -95,10 +96,29 @@ def test_jjm_default_plan_output(test_case: JCase):
     fake_jenkins = FakeJenkins(**test_case.remote)
     mfj = mock.patch("jenkins_job_manager.core.JenkinsJobManager.jenkins", fake_jenkins)
     runner = CliRunner()
+
     with mfj, runner.isolated_filesystem():
         pathlib.Path("./jjm.ini").write_text(fake_jenkins.ini_conf())
         pathlib.Path("./job.yml").write_text(test_case.local)
 
+        # check default output
         result = runner.invoke(jjm, ["plan", "--skip-pager"], catch_exceptions=False)
+        print(result.output)
         assert result.output == test_case.output_default
-        assert result.exit_code == 0
+        return_code = 0 if test_case.output_default == "No changes.\n" else 2
+        assert result.exit_code == return_code
+
+        # @TODO for use with testing #9 Fix
+        # # check yaml output
+        # result = runner.invoke(jjm, ["plan", "--output=yaml"], catch_exceptions=False)
+        # print(result.output)
+        # assert yaml.safe_load(result.output) == test_case.output_default
+        # return_code = 0 if test_case.output_struct == [] else 2
+        # assert result.exit_code == return_code
+        #
+        # # check json output
+        # result = runner.invoke(jjm, ["plan", "--output=json"], catch_exceptions=False)
+        # print(result.output)
+        # assert json.loads(result.output) == test_case.output_struct
+        # return_code = 0 if test_case.output_struct == [] else 2
+        # assert result.exit_code == return_code
