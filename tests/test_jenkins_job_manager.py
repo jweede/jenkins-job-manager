@@ -3,6 +3,7 @@ import logging
 import os
 import pytest
 from unittest import mock
+import json
 
 import click.testing
 import tomlkit
@@ -308,7 +309,7 @@ def test_jjm_plan_no_args(
     jjm_check.assert_not_called()
     check_auth.assert_called_once_with(JenkinsJobManager())
     handle_validation_errors.assert_called_once_with(JenkinsJobManager())
-    handle_plan_report.assert_called_once_with(JenkinsJobManager(), use_pager=True)
+    handle_plan_report.assert_called_once_with(JenkinsJobManager(), use_pager=True, output=None)
 
 
 @mock.patch("jenkins_job_manager.cli.log", autospec=True)
@@ -336,4 +337,33 @@ def test_jjm_plan_all_args(
     jjm_check.assert_not_called()
     check_auth.assert_called_once_with(JenkinsJobManager())
     handle_validation_errors.assert_called_once_with(JenkinsJobManager())
-    handle_plan_report.assert_called_once_with(JenkinsJobManager(), use_pager=False)
+    handle_plan_report.assert_called_once_with(JenkinsJobManager(), use_pager=False, output=None)
+
+@mock.patch("jenkins_job_manager.cli.log", autospec=True)
+@mock.patch("jenkins_job_manager.cli.handle_plan_report", autospec=True)
+@mock.patch("jenkins_job_manager.cli.handle_validation_errors", autospec=True)
+@mock.patch("jenkins_job_manager.cli.check_auth", autospec=True)
+@mock.patch("jenkins_job_manager.cli.jjm_check", autospec=True)
+@mock.patch("jenkins_job_manager.cli.JenkinsJobManager", autospec=True)
+def test_jjm_plan_no_args_output(
+    JenkinsJobManager,
+    jjm_check,
+    check_auth,
+    handle_validation_errors,
+    handle_plan_report,
+    log,
+    jjm_runner,
+):
+    plan_output_type_args = ["--output=json"]
+    result = jjm_runner(["plan"] + plan_output_type_args)
+    assert result.exit_code == 0
+    assert "ERROR" not in result.output
+    log.setLevel.assert_not_called()
+    JenkinsJobManager.assert_called_once_with(overrides_none)
+    JenkinsJobManager.gather.assert_not_called()
+    jjm_check.assert_not_called()
+    check_auth.assert_called_once_with(JenkinsJobManager())
+    handle_validation_errors.assert_called_once_with(JenkinsJobManager())
+    handle_plan_report.assert_called_once_with(JenkinsJobManager(), use_pager=True, output='json')
+    with open('./test_output.json', 'r') as fp:
+        json.loads(fp)
