@@ -1,17 +1,16 @@
-{% for job_name, before_xml, after_xml, difflines, md, changetype in obj.job_changes %}
----
+{% for job_name, before_xml, after_xml, difflines, md, changetype in obj.job_changes %}---
 - job:
-   name: {{ job_name }}
-   before_xml:
-     {% for line in before_xml.splitlines() %}{{ line }}
-     {% endfor %}
-   after_xml:
-     {% for line in after_xml.splitlines() %}{{ line }}
-     {% endfor %}
-   diff:
-     {% for line in difflines %}
-     {%- if line.startswith("+") or line.startswith("-") %}{{ line.strip() }}
-     {% endif -%}{% endfor %}
-   metadata: {{ md }}
-   change_type: {{ changetype }}
-{% endfor -%}
+    name: {{ job_name }}
+    before_xml: |
+      {% for line in before_xml.splitlines() %}{{ line }}
+      {% endfor %}
+    after_xml: |
+      {% for line in after_xml.splitlines() %}{{ line }}
+      {% endfor %}
+    diff: |
+      {% for line in difflines %}
+      {%- if line.startswith("+") or line.startswith("-") %}{{ line.strip() }}
+      {% endif -%}{% endfor %}
+    metadata: {{ md }}
+    change_type: {{ changetype }}
+{%- endfor -%}
