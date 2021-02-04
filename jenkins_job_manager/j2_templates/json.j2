@@ -9,6 +9,13 @@
     {%- if line.startswith("+") or line.startswith("-") %}"{{ line.strip() }}",
     {% endif -%}{% endfor %}""],
     "metadata": {{ md | tojson }},
-    "change_type": {{ changetype | tojson }},
-  },
-{% endfor -%}]
+    "changetype": {{ changetype | tojson }}
+  } {% endfor -%}, {
+  }
+]
+{% set created = obj.changecounts[CREATE] -%}
+{% set updated = obj.changecounts[UPDATE] -%}
+{% set deleted = obj.changecounts[DELETE] -%}
+{% if not created or not updated or not deleted %}
+[]
+{%- endif %}

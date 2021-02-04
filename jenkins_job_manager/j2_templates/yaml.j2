@@ -13,4 +13,10 @@
       {% endif -%}{% endfor %}
     metadata: {{ md }}
     change_type: {{ changetype }}
-{%- endfor -%}
+{% endfor -%}
+{% set created = obj.changecounts[CREATE] -%}
+{% set updated = obj.changecounts[UPDATE] -%}
+{% set deleted = obj.changecounts[DELETE] -%}
+{% if not created or not updated or not deleted %}
+[]
+{%- endif -%}

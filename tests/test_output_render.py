@@ -79,8 +79,7 @@ class JCase:
     local: str = attr.ib()
     remote: dict = attr.ib()
     output_default: str = attr.ib()
-    output_yaml: str = attr.ib()
-    output_json: list = attr.ib()
+    output_struct: list = attr.ib()
 
 
 def _test_cases():
@@ -104,7 +103,7 @@ def test_jjm_default_plan_output(test_case: JCase):
 
         # check default output
         result = runner.invoke(jjm, ["plan", "--skip-pager"], catch_exceptions=False)
-        # print(result.output)
+        print(result.output)
         assert result.output == test_case.output_default
         return_code = 0 if test_case.output_default == "No changes.\n" else 2
         assert result.exit_code == return_code
@@ -113,13 +112,13 @@ def test_jjm_default_plan_output(test_case: JCase):
         # check yaml output
         result = runner.invoke(jjm, ["plan", "--output=yaml"], catch_exceptions=False)
         print(result.output)
-        assert yaml.safe_load(yaml.dump(result.output)) == test_case.output_yaml
-        return_code = 0 if test_case.output_yaml == "No changes.\n" else 2
+        assert yaml.safe_load(result.output) == test_case.output_struct
+        return_code = 0 if test_case.output_struct == [] else 2
         assert result.exit_code == return_code
 
-        # check json output
+        # # check json output
         result = runner.invoke(jjm, ["plan", "--output=json"], catch_exceptions=False)
         print(result.output)
-        assert json.loads(json.dumps(result.output)) == test_case.output_json
-        return_code = 0 if test_case.output_json == '[]\n' else 2
+        assert json.loads(result.output) == test_case.output_struct
+        return_code = 0 if test_case.output_struct == [] else 2
         assert result.exit_code == return_code
