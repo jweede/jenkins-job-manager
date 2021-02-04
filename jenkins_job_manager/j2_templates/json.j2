@@ -1,21 +1,26 @@
-[{% for job_name, before_xml, after_xml, difflines, md, changetype in obj.job_changes %}
-  {
-    "name" : {{ job_name | tojson }},
-    "before_xml": [ {% for line in before_xml.splitlines() %}"{{ line | escape }}",
-     {% endfor %}""],
-    "after_xml": [ {% for line in after_xml.splitlines() %}"{{ line | escape }}",
-     {% endfor %}""],
-    "diff": [ {% for line in difflines %}
-    {%- if line.startswith("+") or line.startswith("-") %}"{{ line.strip() }}",
-    {% endif -%}{% endfor %}""],
-    "metadata": {{ md | tojson }},
-    "changetype": {{ changetype | tojson }}
-  } {% endfor -%}, {
+[
+  { {% for name, before_xml, after_xml, difflines, md, changetype in obj.job_changes %}
+    "job": {
+      "name": {{ name | tojson }},
+      "before_xml": [{%- for line in before_xml.splitlines() %}
+        "{{ line.replace('"','') }}",
+        {%- endfor %}
+        ""],
+      "after_xml": [{%- for line in after_xml.splitlines() %}
+        "{{ line | escape }}",
+        {%- endfor %}
+        ""],
+      "diff": [{%- for line in difflines %}
+        {%- if line.startswith("+") or line.startswith("-") %}
+        "{{ line.strip() }}",
+        {%- endif -%}
+        {%- endfor %}
+        ""],
+      "metadata": {{ md | tojson }},
+      "change_type": {{ changetype | tojson }}
+    },
+    {% endfor -%}
+    "job": {
+    }
   }
 ]
-{% set created = obj.changecounts[CREATE] -%}
-{% set updated = obj.changecounts[UPDATE] -%}
-{% set deleted = obj.changecounts[DELETE] -%}
-{% if not created or not updated or not deleted %}
-[]
-{%- endif %}

@@ -1,6 +1,6 @@
-{% for job_name, before_xml, after_xml, difflines, md, changetype in obj.job_changes %}---
+{% for name, before_xml, after_xml, difflines, md, changetype in obj.job_changes %}---
 - job:
-    name: {{ job_name }}
+    name: {{ name }}
     before_xml: |
       {% for line in before_xml.splitlines() %}{{ line }}
       {% endfor %}
@@ -14,9 +14,3 @@
     metadata: {{ md }}
     change_type: {{ changetype }}
 {% endfor -%}
-{% set created = obj.changecounts[CREATE] -%}
-{% set updated = obj.changecounts[UPDATE] -%}
-{% set deleted = obj.changecounts[DELETE] -%}
-{% if not created or not updated or not deleted %}
-[]
-{%- endif -%}
