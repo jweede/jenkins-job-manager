@@ -144,7 +144,7 @@ def handle_plan_report(obj: JenkinsJobManager, use_pager=True, output=None) -> b
                 click.echo(line, nl=False)
         changes = True
     else:
-        if output == 'json':
+        if output:
             print([])
         else:
             click.secho("No changes.", fg="green")

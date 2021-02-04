@@ -332,8 +332,8 @@ class JenkinsJobManager:
                 if changetype is None:
                     continue
                 if output:
-                    if item.after_xml is None:
-                        continue
+                    # if item.after_xml is None:
+                    #     continue
                     if item.extract_md() is not None:
                         for k, v in item.extract_md().items():
                             md = v
