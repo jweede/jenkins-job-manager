@@ -119,6 +119,6 @@ def test_jjm_default_plan_output(test_case: JCase):
         # # check json output
         result = runner.invoke(jjm, ["plan", "--output=json"], catch_exceptions=False)
         print(result.output)
-        assert json.loads(result.output) == test_case.output_struct
+        assert json.load(result.output) == test_case.output_struct
         return_code = 0 if test_case.output_struct == [] else 2
         assert result.exit_code == return_code
