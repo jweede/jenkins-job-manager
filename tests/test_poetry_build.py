@@ -2,29 +2,29 @@ import sys
 import os
 import subprocess
 import re
+import pathlib
 
 import pytest
 
 here = os.path.dirname(os.path.realpath(__file__))
-repo_dir = os.path.realpath(f"{here}/../")
-dist_dir = os.path.realpath(f"{repo_dir}/dist")
+repo_dir = pathlib.Path(f"{here}/../").resolve()
+dist_dir = pathlib.Path(f"{repo_dir}/dist").resolve()
 
 build_file_re = re.compile(r"^\s*- Built (.*)\s*$", flags=re.IGNORECASE | re.MULTILINE)
 
 
 @pytest.mark.parametrize("pkgformat", ["sdist", "wheel"])
 def test_package_install(tmp_path, pkgformat):
-    p = subprocess.run(
+    build_output = subprocess.check_output(
         ["poetry", "build", "-n", "-f", pkgformat],
         cwd=repo_dir,
-        text=True,
-        capture_output=True,
-        check=True,
+        universal_newlines=True,
     )
-    m = build_file_re.search(p.stdout)
+    assert build_output
+    m = build_file_re.search(build_output)
     assert m
     bname = m.group(1)
-    venv_path = f"{tmp_path}/venv"
+    venv_path = tmp_path / "venv"
     subprocess.check_call(["virtualenv", "-p", sys.executable, venv_path])
-    subprocess.check_call([f"{venv_path}/bin/pip", "install", f"{dist_dir}/{bname}"])
-    subprocess.check_call([f"{venv_path}/bin/jjm", "--help"])
+    subprocess.check_call([venv_path / "bin/pip", "install", dist_dir / bname])
+    subprocess.check_call([venv_path / "bin/jjm", "--help"])
