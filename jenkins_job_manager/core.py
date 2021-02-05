@@ -344,13 +344,14 @@ class JenkinsJobManager:
                         dl = dl + line
                     xml_data = dict(
                         name=item.name,
-                        before_xml=item.before_xml,
-                        after_xml=item.after_xml,
-                        difflines=dl,
+                        # before_xml=item.before_xml,
+                        # after_xml=item.after_xml,
+                        # difflines=dl,
                         metadata=md,
                         changetype=item.changetype()
                     )
-                    yield xml_data
+                    jdata = json.dumps(xml_data, indent=2)
+                    yield jdata
                 else:
                     for i, line in enumerate(item.difflines()):
                         # deals with the rare case that the diff shows no lines
