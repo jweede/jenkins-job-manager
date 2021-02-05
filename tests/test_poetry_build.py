@@ -20,7 +20,7 @@ def test_package_install(tmp_path, pkgformat):
         cwd=repo_dir,
         universal_newlines=True,
     )
-    assert build_output
+    print(build_output)
     m = build_file_re.search(build_output)
     assert m
     bname = m.group(1)
