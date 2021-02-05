@@ -7,7 +7,7 @@ import json
 
 import click.testing
 import tomlkit
-from jenkins_job_manager import __version__
+
 from jenkins_job_manager.cli import jjm
 
 HERE = os.path.dirname(os.path.realpath(__file__))
@@ -15,6 +15,8 @@ PROJECT_DIR = os.path.realpath(HERE + "/../")
 
 
 def test_version():
+    from jenkins_job_manager import __version__
+
     with open(f"{PROJECT_DIR}/pyproject.toml") as fp:
         doc = tomlkit.parse(fp.read())
     print(doc)
@@ -309,7 +311,9 @@ def test_jjm_plan_no_args(
     jjm_check.assert_not_called()
     check_auth.assert_called_once_with(JenkinsJobManager())
     handle_validation_errors.assert_called_once_with(JenkinsJobManager())
-    handle_plan_report.assert_called_once_with(JenkinsJobManager(), use_pager=True, output=None)
+    handle_plan_report.assert_called_once_with(
+        JenkinsJobManager(), use_pager=True, output=None
+    )
 
 
 @mock.patch("jenkins_job_manager.cli.log", autospec=True)
@@ -337,4 +341,6 @@ def test_jjm_plan_all_args(
     jjm_check.assert_not_called()
     check_auth.assert_called_once_with(JenkinsJobManager())
     handle_validation_errors.assert_called_once_with(JenkinsJobManager())
-    handle_plan_report.assert_called_once_with(JenkinsJobManager(), use_pager=False, output=None)
+    handle_plan_report.assert_called_once_with(
+        JenkinsJobManager(), use_pager=False, output=None
+    )

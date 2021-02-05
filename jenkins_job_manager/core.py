@@ -19,8 +19,7 @@ import os
 import random
 import re
 import string
-import xml.dom.minidom
-import xml.etree.ElementTree
+import xml.etree.ElementTree as ET
 from typing import Dict, Optional
 
 import jenkins
@@ -28,11 +27,10 @@ import jinja2
 from jenkins_jobs.parser import YamlParser
 from jenkins_jobs.registry import ModuleRegistry
 from jenkins_jobs.xml_config import XmlJob, XmlViewGenerator
-import json
 
 HERE = os.path.dirname(os.path.realpath(__file__))
-SCRIPT_NAME = os.path.basename(os.path.realpath(__file__))
 J2_DIR = f"{HERE}/j2_templates"
+
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("jjm")
 
@@ -70,7 +68,7 @@ class JenkinsJobManager:
         "_jobs_filter_func",
         "views",
         "validation_errors",
-        "jenv"
+        "jenv",
     )
     job_managing_job_classes = frozenset(["jenkins.branch.OrganizationFolder"])
     raw_xml_yaml_path = "./raw_xml_jobs.yaml"
@@ -85,9 +83,11 @@ class JenkinsJobManager:
         self._jobs_filter_func: NameRegexFilter = NameRegexFilter(".*")
         self.views: Dict[str, XmlChange] = XmlChangeDefaultDict()
         self.validation_errors = []
-        self.jenv = jinja2.Environment(loader=jinja2.FileSystemLoader([J2_DIR]), undefined=jinja2.StrictUndefined)
-        t = self.jenv.globals
-        t["jjm"] = self
+        self.jenv = jinja2.Environment(
+            loader=jinja2.FileSystemLoader([J2_DIR]),
+            undefined=jinja2.StrictUndefined,
+            autoescape=False,
+        )
 
     @property
     def jenkins(self):
@@ -162,8 +162,8 @@ class JenkinsJobManager:
         self.plugins_list = list(self.jenkins.get_plugins().values())
 
     @staticmethod
-    def xml_dump(root: xml.etree.ElementTree.Element) -> str:
-        return xml.etree.ElementTree.tostring(root, encoding="unicode")
+    def xml_dump(root: ET.Element) -> str:
+        return ET.tostring(root, encoding="unicode")
 
     def get_jjb_config(self):
         class JJBConfig:
@@ -186,10 +186,10 @@ class JenkinsJobManager:
         unused, deprecated
         """
         jenkins = self.jenkins
-        _xml: xml.etree.ElementTree.Element = xml_job.xml
+        _xml: ET.Element = xml_job.xml
 
         if not _xml.find("./disabled"):
-            d = xml.etree.ElementTree.Element("disabled")
+            d = ET.Element("disabled")
             d.text = "false"
             _xml.append(d)
         disabled_job = _xml.find("./disabled").text == "true"
@@ -198,7 +198,7 @@ class JenkinsJobManager:
         tmp_name = f"zz_jjm_tmp_{xml_job.name}_{rand_suffix}"
         tmp_xml = xml_job.xml
         tmp_xml.find("./disabled").text = "true"
-        tmp_xml_str = xml.etree.ElementTree.tostring(tmp_xml, encoding="unicode")
+        tmp_xml_str = ET.tostring(tmp_xml, encoding="unicode")
         log.info("creating %s", tmp_name)
         jenkins.create_job(tmp_name, tmp_xml_str)
         formatted_xml = jenkins.get_job_config(tmp_name)
@@ -316,11 +316,12 @@ class JenkinsJobManager:
     def plan_report(self, report_format=None):
         """report on changes about to be made"""
         if report_format == "json":
-            template = self.jenv.get_template("json.j2")
+            template_name = "json.j2"
         elif report_format == "yaml":
-            template = self.jenv.get_template("yaml.j2")
+            template_name = "yaml.j2"
         else:
-            template = self.jenv.get_template("default.j2")
+            template_name = "default.j2"
+        template = self.jenv.get_template(template_name)
 
         changecounts = {CREATE: [], UPDATE: [], DELETE: []}
 
@@ -332,13 +333,7 @@ class JenkinsJobManager:
                 if changetype is None:
                     continue
                 if output:
-                    # if item.after_xml is None:
-                    #     continue
-                    if item.extract_md() is not None:
-                        for k, v in item.extract_md().items():
-                            md = v
-                    else:
-                        md = ''
+                    md = item.extract_md() or {}
                     yield item.name, item.before_xml, item.after_xml, item.difflines(), md, item.changetype()
                 else:
                     for i, line in enumerate(item.difflines()):

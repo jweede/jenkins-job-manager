@@ -123,44 +123,46 @@ def check_auth(obj: JenkinsJobManager):
 
 def handle_plan_report(obj: JenkinsJobManager, use_pager=True, output=None) -> bool:
     """cli helper for plan report"""
+    changes = obj.detected_changes()
 
-    def output_format(line):
-        if line.startswith("+"):
-            return click.style(line, fg="green")
-        elif line.startswith("-"):
-            return click.style(line, fg="red")
-        else:
-            return line
+    if output:
+        # machine readable
+        for line in obj.plan_report(report_format=output):
+            click.echo(line, nl=False)
+    elif changes:
+        # default "human" readable, show changes
+        def output_format(line):
+            if line.startswith("+"):
+                return click.style(line, fg="green")
+            elif line.startswith("-"):
+                return click.style(line, fg="red")
+            else:
+                return line
 
-    if obj.detected_changes() is True:
-        if output:
-            gen_lines = obj.plan_report(output)
-        else:
-            gen_lines = map(output_format, obj.plan_report())
+        gen_lines = map(output_format, obj.plan_report())
         if use_pager is True:
             click.echo_via_pager(gen_lines)
         else:
             for line in gen_lines:
                 click.echo(line, nl=False)
-        changes = True
     else:
-        if output:
-            print([])
-        else:
-            click.secho("No changes.", fg="green")
-        changes = False
+        # default "human" readable, no changes
+        click.secho("No changes.", fg="green")
+
     return changes
 
 
 @jjm.command(name="plan")
 @click.option("--skip-pager", is_flag=True)
-@click.option('--output', default=None, type=click.Choice(['json', 'yaml'], case_sensitive=False))
+@click.option(
+    "--output", default=None, type=click.Choice(["json", "yaml"], case_sensitive=False)
+)
 @click_option_target
 @click.pass_obj
 def jjm_plan(
     obj: JenkinsJobManager,
     skip_pager: bool,
-    output: str,
+    output: typing.Optional[str],
     target: typing.List[str],
 ):
     """check for changes"""
