@@ -14,6 +14,7 @@ HERE = os.path.dirname(os.path.realpath(__file__))
 PROJECT_DIR = os.path.realpath(HERE + "/../")
 
 
+@pytest.mark.skip("only tests virtual environment, not code")
 def test_version():
     from jenkins_job_manager import __version__
 
