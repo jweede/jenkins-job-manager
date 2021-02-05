@@ -54,6 +54,8 @@ class XmlChange:
         return root.toprettyxml(indent="  ")
 
     def extract_md(self):
+        if not self._after:
+            return {}
         node = ET.fromstring(self._after)
         desc = node.find("./description")
         if desc is None or not desc.text:
