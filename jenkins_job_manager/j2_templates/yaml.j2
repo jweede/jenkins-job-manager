@@ -1,10 +1,16 @@
+{% macro handle_xml_block(_xml) -%}
+{%- if not _xml -%}
+    null
+{%- else -%}
+|
+    {{ _xml | indent(4) }}
+{% endif -%}
+{% endmacro -%}
 ---
 {% for name, before_xml, after_xml, difflines, md, changetype in obj.job_changes -%}
 - name: {{ name }}
-  before_xml: |
-    {{ before_xml | indent(4) }}
-  after_xml: |
-    {{ after_xml | indent(4) }}
+  before_xml: {{ handle_xml_block(before_xml) }}
+  after_xml: {{ handle_xml_block(after_xml) }}
   metadata: {{ md | tojson }}
   change_type: {{ changetype |tojson }}
 {% else -%}
