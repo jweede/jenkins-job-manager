@@ -156,4 +156,4 @@ output_default: |
 
   Jobs/Views added 0, updated 1, removed 0.
 output_struct: |
-  [{'job': {}}]
+  {}

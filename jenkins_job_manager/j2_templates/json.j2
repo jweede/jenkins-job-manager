@@ -1,26 +1,2 @@
-[
-  { {% for name, before_xml, after_xml, difflines, md, changetype in obj.job_changes %}
-    "job": {
-      "name": {{ name | tojson }},
-      "before_xml": [{%- for line in before_xml.splitlines() %}
-        "{{ line.replace('"','') }}",
-        {%- endfor %}
-        ""],
-      "after_xml": [{%- for line in after_xml.splitlines() %}
-        "{{ line | escape }}",
-        {%- endfor %}
-        ""],
-      "diff": [{%- for line in difflines %}
-        {%- if line.startswith("+") or line.startswith("-") %}
-        "{{ line.strip() }}",
-        {%- endif -%}
-        {%- endfor %}
-        ""],
-      "metadata": {{ md | tojson }},
-      "change_type": {{ changetype | tojson }}
-    },
-    {% endfor -%}
-    "job": {
-    }
-  }
-]
+{%- for job in obj.job_changes %}{{ job | tojson }}
+{%- endfor %}

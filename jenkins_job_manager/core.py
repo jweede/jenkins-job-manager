@@ -332,14 +332,25 @@ class JenkinsJobManager:
                 if changetype is None:
                     continue
                 if output:
-                    # if item.after_xml is None:
-                    #     continue
+                    if item.after_xml is None:
+                        continue
                     if item.extract_md() is not None:
                         for k, v in item.extract_md().items():
                             md = v
                     else:
                         md = ''
-                    yield item.name, item.before_xml, item.after_xml, item.difflines(), md, item.changetype()
+                    dl = ''
+                    for line in item.difflines():
+                        dl = dl + line
+                    xml_data = dict(
+                        name=item.name,
+                        before_xml=item.before_xml,
+                        after_xml=item.after_xml,
+                        difflines=dl,
+                        metadata=md,
+                        changetype=item.changetype()
+                    )
+                    yield xml_data
                 else:
                     for i, line in enumerate(item.difflines()):
                         # deals with the rare case that the diff shows no lines

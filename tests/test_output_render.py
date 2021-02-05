@@ -109,7 +109,7 @@ def test_jjm_default_plan_output(test_case: JCase):
         assert result.exit_code == return_code
 
         # @TODO for use with testing #9 Fix
-        # check yaml output
+        # # check yaml output
         result = runner.invoke(jjm, ["plan", "--output=yaml"], catch_exceptions=False)
         print(result.output)
         assert yaml.safe_load(result.output) == test_case.output_struct
