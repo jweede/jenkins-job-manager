@@ -155,5 +155,88 @@ output_default: |
    ~ test job
 
   Jobs/Views added 0, updated 1, removed 0.
+output_struct:
+  - name: test job
+    before_xml: |
+      <?xml version="1.0" ?>
+      <project>
+        <actions/>
+        <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+        <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+        <buildWrappers/>
+        <builders>
+          <hudson.tasks.Shell>
+            <command>#!/usr/bin/env bash
+      set -eux
+      echo &quot;goodbye!&quot;</command>
+          </hudson.tasks.Shell>
+        </builders>
+        <canRoam>true</canRoam>
+        <concurrentBuild>false</concurrentBuild>
+        <description>A test job
 
-output_struct: []
+      Team: Test
+      &lt;!-- Managed by Jenkins Job Builder --&gt;</description>
+        <displayName>Test Job</displayName>
+        <keepDependencies>false</keepDependencies>
+        <properties>
+          <jenkins.model.BuildDiscarderProperty>
+            <strategy class="hudson.tasks.LogRotator">
+              <daysToKeep>-1</daysToKeep>
+              <numToKeep>10</numToKeep>
+              <artifactDaysToKeep>-1</artifactDaysToKeep>
+              <artifactNumToKeep>-1</artifactNumToKeep>
+            </strategy>
+          </jenkins.model.BuildDiscarderProperty>
+        </properties>
+        <publishers/>
+        <scm class="hudson.scm.NullSCM"/>
+        <triggers class="vector">
+          <hudson.triggers.TimerTrigger>
+            <spec>@hourly</spec>
+          </hudson.triggers.TimerTrigger>
+        </triggers>
+      </project>
+    after_xml: |
+      <?xml version="1.0" ?>
+      <project>
+        <actions/>
+        <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+        <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+        <buildWrappers/>
+        <builders>
+          <hudson.tasks.Shell>
+            <command>#!/usr/bin/env bash
+      set -eux
+      echo &quot;hi!&quot;</command>
+          </hudson.tasks.Shell>
+        </builders>
+        <canRoam>true</canRoam>
+        <concurrentBuild>false</concurrentBuild>
+        <description>A test job
+
+      Team: Test
+      &lt;!-- Managed by Jenkins Job Builder --&gt;</description>
+        <displayName>Test Job</displayName>
+        <keepDependencies>false</keepDependencies>
+        <properties>
+          <jenkins.model.BuildDiscarderProperty>
+            <strategy class="hudson.tasks.LogRotator">
+              <daysToKeep>-1</daysToKeep>
+              <numToKeep>10</numToKeep>
+              <artifactDaysToKeep>-1</artifactDaysToKeep>
+              <artifactNumToKeep>-1</artifactNumToKeep>
+            </strategy>
+          </jenkins.model.BuildDiscarderProperty>
+        </properties>
+        <publishers/>
+        <scm class="hudson.scm.NullSCM"/>
+        <triggers class="vector">
+          <hudson.triggers.TimerTrigger>
+            <spec>@hourly</spec>
+          </hudson.triggers.TimerTrigger>
+        </triggers>
+      </project>
+    metadata:
+      Team: Test
+    change_type: "update"

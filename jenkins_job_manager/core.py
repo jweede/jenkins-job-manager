@@ -19,8 +19,7 @@ import os
 import random
 import re
 import string
-import xml.dom.minidom
-import xml.etree.ElementTree
+import xml.etree.ElementTree as ET
 from typing import Dict, Optional
 
 import jenkins
@@ -28,6 +27,9 @@ import jinja2
 from jenkins_jobs.parser import YamlParser
 from jenkins_jobs.registry import ModuleRegistry
 from jenkins_jobs.xml_config import XmlJob, XmlViewGenerator
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+J2_DIR = f"{HERE}/j2_templates"
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("jjm")
@@ -66,6 +68,7 @@ class JenkinsJobManager:
         "_jobs_filter_func",
         "views",
         "validation_errors",
+        "jenv",
     )
     job_managing_job_classes = frozenset(["jenkins.branch.OrganizationFolder"])
     raw_xml_yaml_path = "./raw_xml_jobs.yaml"
@@ -80,6 +83,11 @@ class JenkinsJobManager:
         self._jobs_filter_func: NameRegexFilter = NameRegexFilter(".*")
         self.views: Dict[str, XmlChange] = XmlChangeDefaultDict()
         self.validation_errors = []
+        self.jenv = jinja2.Environment(
+            loader=jinja2.FileSystemLoader([J2_DIR]),
+            undefined=jinja2.StrictUndefined,
+            autoescape=False,
+        )
 
     @property
     def jenkins(self):
@@ -154,8 +162,8 @@ class JenkinsJobManager:
         self.plugins_list = list(self.jenkins.get_plugins().values())
 
     @staticmethod
-    def xml_dump(root: xml.etree.ElementTree.Element) -> str:
-        return xml.etree.ElementTree.tostring(root, encoding="unicode")
+    def xml_dump(root: ET.Element) -> str:
+        return ET.tostring(root, encoding="unicode")
 
     def get_jjb_config(self):
         class JJBConfig:
@@ -178,10 +186,10 @@ class JenkinsJobManager:
         unused, deprecated
         """
         jenkins = self.jenkins
-        _xml: xml.etree.ElementTree.Element = xml_job.xml
+        _xml: ET.Element = xml_job.xml
 
         if not _xml.find("./disabled"):
-            d = xml.etree.ElementTree.Element("disabled")
+            d = ET.Element("disabled")
             d.text = "false"
             _xml.append(d)
         disabled_job = _xml.find("./disabled").text == "true"
@@ -190,7 +198,7 @@ class JenkinsJobManager:
         tmp_name = f"zz_jjm_tmp_{xml_job.name}_{rand_suffix}"
         tmp_xml = xml_job.xml
         tmp_xml.find("./disabled").text = "true"
-        tmp_xml_str = xml.etree.ElementTree.tostring(tmp_xml, encoding="unicode")
+        tmp_xml_str = ET.tostring(tmp_xml, encoding="unicode")
         log.info("creating %s", tmp_name)
         jenkins.create_job(tmp_name, tmp_xml_str)
         formatted_xml = jenkins.get_job_config(tmp_name)
@@ -278,19 +286,7 @@ class JenkinsJobManager:
                 fname = job_name_to_file_name(name)
                 assert os.path.exists(fname)
                 xml_job_name_pairs.append((name, fname))
-        template = jinja2.Template(
-            """\
----
-{% for job_name, file_name in raw_xml_jobs -%}
-- job:
-   name: {{ job_name |tojson }}
-   project-type: raw
-   raw: !include-raw: {{ file_name }}
-
-{% endfor -%}
-""",
-            undefined=jinja2.StrictUndefined,
-        )
+        template = self.jenv.get_template("raw_xml_import.j2")
 
         for mxml in missing:
             job_name = mxml.name
@@ -307,75 +303,51 @@ class JenkinsJobManager:
         return missing
 
     def validate_metadata(self):
-        ET = xml.etree.ElementTree
         md_conf = self.config.metadata
-
-        def extract_md(job: XmlChange):
-            node = ET.fromstring(job.after_xml)
-            desc = node.find("./description")
-            if desc is None or not desc.text:
-                log.warning("No description in jenkins job %r??", job.name)
-                return {}
-            text = desc.text.replace("<!-- Managed by Jenkins Job Builder -->", "")
-            md = {
-                m.group(1): m.group(2)
-                for m in re.finditer(r"^\s*([\w-]+):\s*([\w -]+)\s*$", text, flags=re.M)
-            }
-            return md
 
         for job in self.jobs.values():
             if job.after_xml is None:
                 continue
-            md = extract_md(job)
+            md = job.extract_md()
             warnings = md_conf.validate(md)
             for warning in warnings:
                 yield job.name, warning
 
-    def plan_report(self):
+    def plan_report(self, report_format=None):
         """report on changes about to be made"""
-        template = jinja2.Template(
-            """\
-{% for line in obj.view_changes %}{{ line }}
-{% endfor -%}
-{% for line in obj.job_changes %}{{ line }}
-{% endfor -%}
-{% set created = obj.changecounts[CREATE] -%}
-{% set updated = obj.changecounts[UPDATE] -%}
-{% set deleted = obj.changecounts[DELETE] -%}
-{% if created or updated or deleted %}
----
-
-{% macro change_names(changechar, names) -%}
-{% for name in names %} {{ changechar }} {{ name }}
-{% endfor %}{% endmacro -%}
-{{ change_names("+", created) }}{{ change_names("-", deleted) }}{{ change_names("~", updated) }}
-Jobs/Views added {{ created |length }}, updated {{ updated |length }}, removed {{ deleted |length }}.
-{% else -%}
-No changes.
-{% endif -%}
-""",
-            undefined=jinja2.StrictUndefined,
-        )
+        if report_format == "json":
+            template_name = "json.j2"
+        elif report_format == "yaml":
+            template_name = "yaml.j2"
+        else:
+            template_name = "default.j2"
+        template = self.jenv.get_template(template_name)
 
         changecounts = {CREATE: [], UPDATE: [], DELETE: []}
 
-        def iter_changes(xml_dict):
+        def iter_changes(xml_dict, output=None):
             """closure to handle changecount side effect"""
+
             for item in xml_dict.values():
                 changetype = item.changetype()
                 if changetype is None:
                     continue
-                for i, line in enumerate(item.difflines()):
-                    # deals with the rare case that the diff shows no lines
-                    if i == 0:
-                        changecounts[changetype].append(item.name)
-                    yield line
+                if output:
+                    md = item.extract_md() or {}
+                    yield item.name, item.before_xml, item.after_xml, item.difflines(), md, item.changetype()
+                else:
+                    for i, line in enumerate(item.difflines()):
+                        # deals with the rare case that the diff shows no lines
+                        if i == 0:
+                            changecounts[changetype].append(item.name)
+                        yield line
 
         report_context = {
             "view_changes": iter_changes(self.views),
-            "job_changes": iter_changes(self.jobs),
+            "job_changes": iter_changes(self.jobs, report_format),
             "changecounts": changecounts,
         }
+
         return template.generate(
             obj=report_context, CREATE=CREATE, UPDATE=UPDATE, DELETE=DELETE
         )

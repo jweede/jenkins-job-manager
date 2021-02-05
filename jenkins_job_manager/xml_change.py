@@ -1,12 +1,16 @@
 import difflib
 import operator
 import xml.dom.minidom
+import xml.etree.ElementTree as ET
+import re
+import logging
 
 from collections import defaultdict
 from xml.dom import Node
 
 # constants used for enums herein
 CREATE, UPDATE, DELETE = "create", "update", "delete"
+log = logging.getLogger("jjm")
 
 
 class XmlChange:
@@ -48,6 +52,19 @@ class XmlChange:
 
         root.normalize()
         return root.toprettyxml(indent="  ")
+
+    def extract_md(self):
+        node = ET.fromstring(self._after)
+        desc = node.find("./description")
+        if desc is None or not desc.text:
+            log.warning("No description in jenkins job %r??", self.name)
+            return {}
+        text = desc.text.replace("<!-- Managed by Jenkins Job Builder -->", "")
+        md = {
+            m.group(1): m.group(2)
+            for m in re.finditer(r"^\s*([\w-]+):\s*([\w -]+)\s*$", text, flags=re.M)
+        }
+        return md
 
     def changetype(self):
         if self._before == self._after:

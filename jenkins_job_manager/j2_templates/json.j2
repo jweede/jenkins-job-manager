@@ -1,0 +1,11 @@
+[
+  {% for name, before_xml, after_xml, difflines, md, changetype in obj.job_changes -%}
+  {
+      "name": {{ name | tojson }},
+      "before_xml": {{ before_xml | tojson }},
+      "after_xml": {{ after_xml | tojson }},
+      "metadata": {{ md | tojson }},
+      "change_type": {{ changetype | tojson }}
+  }{% if not loop.last %},{% endif %}
+  {%- endfor %}
+]

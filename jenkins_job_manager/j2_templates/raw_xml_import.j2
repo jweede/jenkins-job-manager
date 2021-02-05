@@ -1,0 +1,8 @@
+---
+{% for job_name, file_name in raw_xml_jobs -%}
+- job:
+   name: {{ job_name |tojson }}
+   project-type: raw
+   raw: !include-raw: {{ file_name }}
+
+{% endfor -%}

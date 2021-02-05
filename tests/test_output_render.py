@@ -103,22 +103,21 @@ def test_jjm_default_plan_output(test_case: JCase):
 
         # check default output
         result = runner.invoke(jjm, ["plan", "--skip-pager"], catch_exceptions=False)
-        print(result.output)
+        # print(result.output)
         assert result.output == test_case.output_default
         return_code = 0 if test_case.output_default == "No changes.\n" else 2
         assert result.exit_code == return_code
 
-        # @TODO for use with testing #9 Fix
-        # # check yaml output
-        # result = runner.invoke(jjm, ["plan", "--output=yaml"], catch_exceptions=False)
+        # check yaml output
+        result = runner.invoke(jjm, ["plan", "--output=yaml"], catch_exceptions=False)
         # print(result.output)
-        # assert yaml.safe_load(result.output) == test_case.output_default
-        # return_code = 0 if test_case.output_struct == [] else 2
-        # assert result.exit_code == return_code
-        #
+        assert yaml.safe_load(result.output) == test_case.output_struct
+        return_code = 0 if test_case.output_struct == [] else 2
+        assert result.exit_code == return_code
+
         # # check json output
-        # result = runner.invoke(jjm, ["plan", "--output=json"], catch_exceptions=False)
+        result = runner.invoke(jjm, ["plan", "--output=json"], catch_exceptions=False)
         # print(result.output)
-        # assert json.loads(result.output) == test_case.output_struct
-        # return_code = 0 if test_case.output_struct == [] else 2
-        # assert result.exit_code == return_code
+        assert json.loads(result.output) == test_case.output_struct
+        return_code = 0 if test_case.output_struct == [] else 2
+        assert result.exit_code == return_code

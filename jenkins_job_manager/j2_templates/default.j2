@@ -1,0 +1,18 @@
+{% for line in obj.view_changes %}{{ line }}
+{% endfor -%}
+{% for line in obj.job_changes %}{{ line }}
+{% endfor -%}
+{% set created = obj.changecounts[CREATE] -%}
+{% set updated = obj.changecounts[UPDATE] -%}
+{% set deleted = obj.changecounts[DELETE] -%}
+{% if created or updated or deleted %}
+---
+
+{% macro change_names(changechar, names) -%}
+{% for name in names %} {{ changechar }} {{ name }}
+{% endfor %}{% endmacro -%}
+{{ change_names("+", created) }}{{ change_names("-", deleted) }}{{ change_names("~", updated) }}
+Jobs/Views added {{ created |length }}, updated {{ updated |length }}, removed {{ deleted |length }}.
+{% else -%}
+No changes.
+{% endif -%}
