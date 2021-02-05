@@ -1,1 +1,2 @@
-[{{ obj.job_changes | safe }}]
+[{%- for job in obj.job_changes %}{{ job | safe }}
+{%- endfor %}]

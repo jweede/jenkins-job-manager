@@ -350,8 +350,11 @@ class JenkinsJobManager:
                         metadata=md,
                         changetype=item.changetype()
                     )
-                    jdata = json.dumps(xml_data, indent=2)
-                    yield jdata
+                    if report_format == "json":
+                        jdata = json.dumps(xml_data, indent=2)
+                        yield jdata
+                    elif report_format == "yaml":
+                        yield xml_data
                 else:
                     for i, line in enumerate(item.difflines()):
                         # deals with the rare case that the diff shows no lines

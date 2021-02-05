@@ -1,7 +1,6 @@
 ---{%- for job in obj.job_changes %}
-- job:
-    {%- for k, v in job.items() %}
-    {{ k }}: |
-      {{ v }}
-    {%- endfor %}
-{%- endfor %}
+-
+  {%- for k, v in job.items() %}
+  {{ k }}: {{ v }}
+  {%- endfor -%}
+{%- endfor -%}

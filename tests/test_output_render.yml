@@ -67,7 +67,8 @@ remote:
         </project>
 output_default: |
   No changes.
-output_struct: []
+output_struct: |
+  []
 ---
 name: one line change
 local: |
@@ -156,4 +157,4 @@ output_default: |
 
   Jobs/Views added 0, updated 1, removed 0.
 output_struct: |
-  {}
+  [{"name": "test job", "metadata": "Test", "changetype": "update"}]
