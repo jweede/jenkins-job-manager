@@ -4,7 +4,7 @@ Contains extensions for raw xml loading with jjb
 import os
 import logging
 import jinja2
-import xml.etree.ElementTree
+import xml.etree.ElementTree as ET
 import jenkins_jobs.modules.base
 from jenkins_jobs.xml_config import XmlJob, XmlJobGenerator
 
@@ -41,7 +41,7 @@ class RawXmlProject(jenkins_jobs.modules.base.Base):
             templ = self.jenv.from_string(xmlstr)
             xmlstr = templ.render(data=data)
             log.debug("rendered: \n---\n%s\n---", xmlstr)
-        xml_parent = xml.etree.ElementTree.fromstring(xmlstr)
+        xml_parent = ET.fromstring(xmlstr)
         return xml_parent
 
 
@@ -51,7 +51,7 @@ class XmlJobGeneratorWithRaw(XmlJobGenerator):
     def _annotate_with_plugins(self, xml_job: XmlJob):
         """Many elements coming out of jjb are missing plugin version data."""
         plugins: dict = self.registry.plugins_dict
-        doc: xml.etree.ElementTree.Element = xml_job.xml
+        doc: ET.Element = xml_job.xml
         for node in doc.iterfind(".//*[@plugin]"):
             plugin_name = node.attrib["plugin"]
             if "@" in plugin_name:
