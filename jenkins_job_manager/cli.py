@@ -192,7 +192,7 @@ def jjm_apply(
         click.secho("No changes to apply.", fg="green")
         return
     handle_plan_report(obj, use_pager=False)
-    if not click.auto_approve:
+    if not auto_approve:
         click.confirm(click.style("Apply changes?", bold=True), abort=True)
     changecounts, msg = obj.apply_plan()
     click.echo(msg)
