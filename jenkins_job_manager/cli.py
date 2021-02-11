@@ -176,9 +176,12 @@ def jjm_plan(
 
 @jjm.command(name="apply")
 @click.option("--allow-delete", is_flag=True, help="disables delete safety.")
+@click.option("--auto-approve", is_flag=True, help="disables prompts.")
 @click_option_target
 @click.pass_obj
-def jjm_apply(obj: JenkinsJobManager, target: str, allow_delete: bool):
+def jjm_apply(
+    obj: JenkinsJobManager, target: str, auto_approve: bool, allow_delete: bool
+):
     """check and apply changes"""
     if allow_delete:
         obj.config.allow_delete = True
@@ -189,7 +192,8 @@ def jjm_apply(obj: JenkinsJobManager, target: str, allow_delete: bool):
         click.secho("No changes to apply.", fg="green")
         return
     handle_plan_report(obj, use_pager=False)
-    click.confirm(click.style("Apply changes?", bold=True), abort=True)
+    if not click.auto_approve:
+        click.confirm(click.style("Apply changes?", bold=True), abort=True)
     changecounts, msg = obj.apply_plan()
     click.echo(msg)
     _deletes = changecounts[DELETE]
