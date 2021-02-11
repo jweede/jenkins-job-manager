@@ -138,7 +138,7 @@ def test_jjm_apply_all_args(
     log,
     jjm_runner,
 ):
-    result = jjm_runner(base_args + ["apply"] + ["--target", "bogus"])
+    result = jjm_runner(base_args + ["apply"] + ["--target", "bogus", "--auto-approve"])
     assert result.exit_code == 1
     assert "ERROR" not in result.output
     log.setLevel.assert_called_once_with(logging.DEBUG)
