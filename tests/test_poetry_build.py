@@ -26,7 +26,7 @@ def test_package_install(tmp_path, pkgformat):
     assert m
     bname = m.group(1)
     venv_path = tmp_path / "venv"
-    subprocess.check_call(["virtualenv", "-p", sys.executable, venv_path])
+    subprocess.check_call([sys.executable, "-m", "venv", venv_path])
     subprocess.check_call([venv_path / "bin/pip", "install", dist_dir / bname])
     subprocess.check_call([venv_path / "bin/jjm", "--help"])
     # also check that the version matches
