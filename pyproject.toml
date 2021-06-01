@@ -4,7 +4,7 @@ target-version = ['py36']
 
 [tool.poetry]
 name = "jenkins-job-manager"
-version = "0.6.7"
+version = "0.6.8"
 description = "A terraform-like wrapper around JJB with some additional features."
 authors = ["Jeremy Lavergne <github@lavergne.me>", "Jon Wedaman <jweede@gmail.com>"]
 
