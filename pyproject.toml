@@ -9,19 +9,19 @@ description = "A terraform-like wrapper around JJB with some additional features
 authors = ["Jeremy Lavergne <github@lavergne.me>", "Jon Wedaman <jweede@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.6"
-click = "^7.1.2"
-jenkins-job-builder = "^3.5.0"
-jinja2 = "^2.11"
-python-jenkins = "^1.7.0"
+python = "^3.8"
+click = "*"
+jenkins-job-builder = "*"
+jinja2 = "*"
+python-jenkins = "*"
 
 [tool.poetry.scripts]
 jjm = 'jenkins_job_manager.cli:jjm'
 
 [tool.poetry.dev-dependencies]
-tomlkit = "^0.7.0"
-pytest = "^6.0.1"
-attrs = "^20.3.0"
+tomlkit = "*"
+pytest = "*"
+attrs = "*"
 
 [build-system]
 requires = ["poetry>=1.0"]
