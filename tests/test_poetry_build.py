@@ -19,7 +19,7 @@ def test_package_install(tmp_path, pkgformat):
     build_output = subprocess.check_output(
         ["poetry", "build", "-n", "-f", pkgformat],
         cwd=repo_dir,
-        universal_newlines=True,
+        text=True,
     )
     print(build_output)
     m = build_file_re.search(build_output)
@@ -36,7 +36,7 @@ def test_package_install(tmp_path, pkgformat):
             "-c",
             "from jenkins_job_manager import __version__;print(__version__)",
         ],
-        universal_newlines=True,
+        text=True,
     ).strip()
     doc = tomlkit.parse(pathlib.Path(repo_dir / "pyproject.toml").read_text())
     toml_version = doc["tool"]["poetry"]["version"]

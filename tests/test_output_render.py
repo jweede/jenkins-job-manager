@@ -83,7 +83,7 @@ class JCase:
 
 
 def _test_cases():
-    with open(f"{HERE}/test_output_render.yml", "r") as fp:
+    with open(f"{HERE}/test_output_render.yml") as fp:
         test_cases = yaml.safe_load_all(fp)
         for test_case in filter(bool, test_cases):
             yield JCase(**test_case)
