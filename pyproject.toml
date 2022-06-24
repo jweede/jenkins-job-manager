@@ -23,6 +23,12 @@ jjm = 'jenkins_job_manager.cli:jjm'
 tomlkit = "*"
 pytest = "*"
 attrs = "*"
+pytest-cov = "^3.0.0"
+pytest-xdist = "^2.5.0"
+
+[tool.pytest.ini_options]
+addopts = ["-q", "--junitxml=testresults.xml", "-nauto", "--cov", "jenkins_job_manager", "--cov-report", "html", "--cov-report", "term:skip-covered"]
+norecursedirs = [".venv"]
 
 [build-system]
 requires = ["poetry>=1.0"]
